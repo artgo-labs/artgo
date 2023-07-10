@@ -3,20 +3,6 @@
 ## Struct
 
 ```js
-struct NftHash {
-    prompt: Field2,      // prompt command to generate image
-}
-```
-
-```js
-struct NftInfo {
-    holder: address, // holder address
-    hash: filed,     // bhp256_hash({prompt: field})
-    uri: Field2,      // image content ipfs url
-}
-```
-
-```js
 struct TokenId {
     next_token_id: field,   // max nft id
 }
@@ -30,10 +16,40 @@ struct Field2 {
 ```
 
 ```js
+struct NftHash {
+    minter: address      // creator
+    prompt: Field2,      // prompt command to generate image
+    nonce: field,        // random number to unique nft
+}
+```
+
+```js
+struct NftInfo {
+    owner: address, // owner address
+    minter: address, // minter address
+    hash: filed,     // bhp256_hash(NftHash)
+    uri: Field2,      // image content ipfs url
+}
+```
+
+```js
+struct Order {
+    owner: address,  // holder address
+    minter: address, // minter address
+    hash: filed,     // bhp256_hash(NftHash)
+    uri: Field2,     // image content ipfs url
+    type: u8,        // order type, 0 for non-trading
+    amount: field,   // minumum amount
+    status: u8,      // order status, 0 for non-trading
+}
+```
+
+```js
 record Nft {
     owner: address,         // NFT owner
     minter: address,        // NFT minter
     prompt: Field2,          // NFT prompt, hidden
+    nonce: field             // random number to unique nft
     uri: Field2,              // NFT content
 }
 ```
@@ -42,13 +58,18 @@ record Nft {
 record Bid {
     owner: address,     // bid owner
     bidder: address,    // bidder address
-    nft_id: field,      // id
-    gates: u64,         // bid amount
-    is_winner: bool     // bid result
+    hash: field,        // id
+    amount: field,      // bidding amount
 }
 ```
 
 ## Public states
+
+### tokenId
+
+mapping
+Store the maximum tokenid.  
+`tokenId` store: `bool => TokenId`;
 
 ### nfts
 
@@ -58,11 +79,11 @@ Store all the minted nfts.
 `nfts` store: `id => NftInfo`  
 `id` id++ from 1
 
-### tokenId
+### orders
 
 mapping
-Store the maximum tokenid.  
-`tokenId` store: `bool => TokenId`;
+Store all the orders.
+`orders` store: `NftHash => Order`;
 
 ## Interfaces
 
@@ -144,7 +165,7 @@ usage:
 TBD
 ```
 
-### bid_auction & bid_confirm (TBD)
+### bid_auction (TBD)
 
 `bid_auction` to bid for NFT.
 
@@ -152,18 +173,15 @@ TBD
 
 inputs:
 
-- `id` : field
-   nft id
+- `hash` : field
+   nft hash
   
-- `bidder` : address
-  bidder address
-
 - `amount` : u64
   bid amount
 
 outputs:
 
-- success --`Bid` record to admin
+- success --`Bid` record to admin, if amount greater than previous, refund the previous. Otherwise, tx will fail.
 
 usage:
 
@@ -189,7 +207,7 @@ outputs:
 
 - `NFT` record to winner
 
-- `Bid` record to seller
+- `credit` record to seller
 
 usage:
 
@@ -199,7 +217,7 @@ TBD
 
 ## Workflow (TBD)
 
-![avatar](./artgo.jpg)
+![avatar](./artgo.png)
 
 ## Build Guide
 
@@ -220,7 +238,7 @@ snarkos developer deploy
 -r "{  owner: aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px.private,  microcredits: 93750000000000u64.private,  _nonce: 878010960996471104548362432643577968735743754584843045001751072533354535962group.public}" 
 --query "http://localhost:3030" 
 --broadcast "http://localhost:3030/testnet3/transaction/broadcast" 
--p ${privatekey} 
+-p "APrivateKey1zkp8CZNn3yeCseEtxuVPbDCwSyhGW6yZKUYKfgXmcpoGPWH" 
 artgo_aigc_v1.aleo
 ```
 
@@ -228,12 +246,8 @@ artgo_aigc_v1.aleo
 
 aigc program testnet3 deployed:
 
-v1 deployed:
-txid: at1gz5azfpd0xegxxnan9j9yy0fujghvtrfdqkad0gplwf95z38s5gqfvsvp4
-
-curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo'
 
 mapping query:
 
-curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/mapping/tokenId/true'
+curl --location 'http://testnet3.artgo.app/testnet3/program/aigc.aleo/mapping/tokenId/true'
 ```

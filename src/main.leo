@@ -75,5 +75,6 @@ program artgo_aigc_v1.aleo{
             uri: uri,
         };
         Mapping::set(nfts, num, info);
+        //Todo:: update orders
     }
 }
