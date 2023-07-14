@@ -34,13 +34,14 @@ struct NftInfo {
 
 ```js
 struct Order {
-    owner: address,  // holder address
+    owner: address,  // owner address
     minter: address, // minter address
-    hash: filed,     // bhp256_hash(NftHash)
+    hash: field,     // bhp256_hash(NftHash)
     uri: Field2,     // image content ipfs url
     type: u8,        // order type, 0 for non-trading
     amount: field,   // minumum amount
     status: u8,      // order status, 0 for non-trading
+    deadline: field  // the timestamp to finish order
 }
 ```
 
@@ -154,6 +155,9 @@ inputs:
 
 - `amount` u128
   Minimum amount for auction
+
+- `deadline` field
+  the timestamp to finish order
 
 outputs:
 
