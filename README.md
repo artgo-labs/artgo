@@ -40,7 +40,7 @@ struct Order {
     uri: Field2,     // image content ipfs url
     type: u8,        // order type, 0 for non-trading
     amount: field,   // minumum amount
-    status: u8,      // order status, 0 for non-trading
+    status: u8,      // order status, 0:non-trading, 1:trading 2:finished
     deadline: field  // the timestamp to finish order
 }
 ```
@@ -142,16 +142,21 @@ curl --location 'http://127.0.0.1:3030/testnet3/program/aigc.aleo/mapping/nfts/1
 
 ```
 
-### start_auction(TBD)
+### place_order(TBD)
 
-`start_auction` used to start an auction.
+`place_order` used to start an order.
 
-- start auction, permisionless。
+- place order, permisionless。
 
 inputs:
 
 - `NFT` record
   NFT to auction
+
+- `type` order type
+      0 - non-trading
+      1 - sell
+      2 - auction
 
 - `amount` u128
   Minimum amount for auction
@@ -169,11 +174,11 @@ usage:
 TBD
 ```
 
-### bid_auction (TBD)
+### bid_order (TBD)
 
-`bid_auction` to bid for NFT.
+`bid_order` to bid for NFT.
 
-- bid auction, permisionless 。
+- bid order, permisionless 。
 
 inputs:
 
@@ -193,11 +198,11 @@ usage:
 TBD
 ```
 
-### finish_auction (TBD)
+### finish_order (TBD)
 
-`finish_auction` to finish an auction.
+`finish_order` to finish an order.
 
-- finish auction, only admin
+- finish order, only admin
 
 inputs:
 
