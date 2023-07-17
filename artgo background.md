@@ -47,4 +47,4 @@ Our R&D team consists of AI and Web3 professionals who have years of experience 
 1. Expand the types of AIGC and add support for image-to-image generation.
 2. Support NFT primary-market issuance (mystery box, auction, launchpad, etc.).
 3. Develop an AI scoring feature that allows AI to rate user-generated images.
-4. Make use of the machine learning（ML）capability of Aleo to ZK-ize the NFT generation model.ZK
+4. Make use of the machine learning（ML）capability of Aleo to ZK-ize the NFT generation model.
