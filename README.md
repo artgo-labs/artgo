@@ -38,10 +38,10 @@ struct Order {
     minter: address, // minter address
     hash: field,     // bhp256_hash(NftHash)
     uri: Field2,     // image content ipfs url
-    type: u8,        // order type, 0 for non-trading
+    type: u8,        // order type, 0:non-trading 1:normal 2:auction（Todo）
     amount: field,   // minumum amount
-    status: u8,      // order status, 0:non-trading, 1:trading 2:finished
-    deadline: field  // the timestamp to finish order
+    status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
+    deadline: field  // the timestamp to finish order -- blocknumber or timestamp
 }
 ```
 
@@ -51,7 +51,7 @@ record Nft {
     minter: address,        // NFT minter
     prompt: Field2,          // NFT prompt, hidden
     nonce: field             // random number to unique nft
-    uri: Field2,              // NFT content
+    uri: Field2,             // NFT content
 }
 ```
 
@@ -155,7 +155,7 @@ inputs:
 
 - `type` order type
       0 - non-trading
-      1 - sell
+      1 - normal
       2 - auction
 
 - `amount` u128
@@ -173,6 +173,12 @@ usage:
 ```shell
 TBD
 ```
+
+### cancel_order(TBD)
+
+`cancel_order` used to cancel an order.'
+
+- cancel order, permisionless.
 
 ### bid_order (TBD)
 
@@ -203,6 +209,8 @@ TBD
 `finish_order` to finish an order.
 
 - finish order, only admin
+- delete mapping when nft not sold.
+- success or fail
 
 inputs:
 
