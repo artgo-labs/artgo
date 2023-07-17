@@ -1,5 +1,12 @@
 # aigc.aleo program
 
+For project introduction, please visit : [artgo background](https://github.com/artgo-labs/artgo/blob/main/artgo%20background.md).
+
+For user guide, please visit : [Artgo Tutorial](https://github.com/artgo-labs/artgo/blob/main/Artgo%20Tutorial.pdf).
+
+Offical website : https://artgo.io/.
+
+
 ## Struct
 
 ```js
