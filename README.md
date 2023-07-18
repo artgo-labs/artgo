@@ -25,7 +25,7 @@ struct NftHash {
 
 ```js
 struct NftInfo {
-    owner: address, // owner address
+    holder: address, // owner address
     minter: address, // minter address
     hash: filed,     // bhp256_hash(NftHash)
     uri: Field2,      // image content ipfs url
@@ -34,11 +34,11 @@ struct NftInfo {
 
 ```js
 struct Order {
-    owner: address,  // owner address
+    holder: address,  // owner address
     minter: address, // minter address
     hash: field,     // bhp256_hash(NftHash)
     uri: Field2,     // image content ipfs url
-    type: u8,        // order type, 0:non-trading 1:normal 2:auction（Todo）
+    order_type: u8,        // order type, 0:non-trading 1:normal 2:auction（Todo）
     amount: field,   // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
     deadline: field  // the timestamp to finish order -- blocknumber or timestamp
@@ -103,6 +103,9 @@ inputs:
 - `uri` : Field2
     image content
 
+- `nonce` : field
+    random unique number
+
 outputs:
 
 - `NFT` record
@@ -153,7 +156,7 @@ inputs:
 - `NFT` record
   NFT to auction
 
-- `type` order type
+- `order_type` order type
       0 - non-trading
       1 - normal
       2 - auction
@@ -180,11 +183,22 @@ TBD
 
 - cancel order, permisionless.
 
+inputs:
+
+- `hash` : field
+   nft hash
+  
+usage:
+
+```shell
+TBD
+```
+
 ### bid_order (TBD)
 
 `bid_order` to bid for NFT.
 
-- bid order, permisionless 。
+- bid order, permisionless.
 
 inputs:
 
