@@ -3,12 +3,6 @@
 ## Struct
 
 ```js
-struct TokenId {
-    next_token_id: field,   // max nft id
-}
-```
-
-```js
 struct Field2 {
     first: field,   // the first half
     second: field,  // the second half
@@ -39,9 +33,17 @@ struct Order {
     hash: field,     // bhp256_hash(NftHash)
     uri: Field2,     // image content ipfs url
     order_type: u8,        // order type, 0:non-trading 1:normal 2:auction（Todo）
-    amount: field,   // minumum amount
+    amount: u128,   // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
     deadline: field  // the timestamp to finish order -- blocknumber or timestamp
+}
+```
+
+```js
+struct Bid {
+    bidder: address,    // bidder address
+    hash: field,        // id
+    amount: u128,      // bidding amount
 }
 ```
 
@@ -55,14 +57,6 @@ record Nft {
 }
 ```
 
-```js
-record Bid {
-    owner: address,     // bid owner
-    bidder: address,    // bidder address
-    hash: field,        // id
-    amount: field,      // bidding amount
-}
-```
 
 ## Public states
 
@@ -70,7 +64,7 @@ record Bid {
 
 mapping
 Store the maximum tokenid.  
-`tokenId` store: `bool => TokenId`;
+`tokenId` store: `bool => field`;
 
 ### nfts
 
@@ -80,11 +74,23 @@ Store all the minted nfts.
 `nfts` store: `id => NftInfo`  
 `id` id++ from 1
 
+### admin
+
+mapping
+Store admin.
+`admin` store: `bool => address`;
+
 ### orders
 
 mapping
 Store all the orders.
-`orders` store: `NftHash => Order`;
+`orders` store: `field => Order`;
+
+### bids
+
+mapping
+Store all the bids.
+`bids` store: `field => Bid`;
 
 ## Interfaces
 
@@ -100,10 +106,10 @@ inputs:
 - `prompt` : Field2.private
   nft prompt
 
-- `uri` : Field2
+- `uri` : Field2.public
     image content
 
-- `nonce` : field
+- `nonce` : field.public
     random unique number
 
 outputs:
@@ -145,7 +151,31 @@ curl --location 'http://127.0.0.1:3030/testnet3/program/aigc.aleo/mapping/nfts/1
 
 ```
 
-### place_order(TBD)
+### transfer_private_nft
+
+`transfer_private_nft` used to tranfer nft.
+
+- transfer nft, permisionless.
+
+inputs:
+
+- `NFT` record
+  NFT to auction
+
+- `receiver` address
+  Minimum amount for auction
+
+outputs:
+
+- `NFT` record to receiver
+
+usage:
+
+```shell
+TBD
+```
+
+### place_order
 
 `place_order` used to start an order.
 
@@ -161,11 +191,14 @@ inputs:
       1 - normal
       2 - auction
 
-- `amount` u128
+- `amount` field
   Minimum amount for auction
 
 - `deadline` field
   the timestamp to finish order
+
+- `admin_in` address
+  admin address
 
 outputs:
 
@@ -194,7 +227,7 @@ usage:
 TBD
 ```
 
-### bid_order (TBD)
+### bid_order
 
 `bid_order` to bid for NFT.
 
@@ -202,11 +235,17 @@ TBD
 
 inputs:
 
+- `credit` : Record
+   Aleo Credit record
+
 - `hash` : field
    nft hash
   
-- `amount` : u64
+- `amount` : field
   bid amount
+
+- `admin_in` address
+  admin address
 
 outputs:
 
@@ -218,27 +257,30 @@ usage:
 TBD
 ```
 
-### finish_order (TBD)
+### finish_order
 
 `finish_order` to finish an order.
 
 - finish order, only admin
 - delete mapping when nft not sold.
-- success or fail
 
 inputs:
 
 - `nft` : `NFT` record
    nft record
+
+- `winner` : address
+   nft record
+
+- `winner_amount` : field
+   nft record
   
-- `winner` : `Bid` record
-  bid record
+- `admin_in` : address
+   nft record
 
 outputs:
 
 - `NFT` record to winner
-
-- `credit` record to seller
 
 usage:
 
