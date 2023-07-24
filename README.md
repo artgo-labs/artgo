@@ -269,14 +269,14 @@ inputs:
 - `nft` : `NFT` record
    nft record
 
-- `winner` : address
-   nft record
+- `winner` : address  
+   winner address
 
-- `winner_amount` : field
-   nft record
+- `winner_amount` : field  
+   winner amount
   
-- `admin_in` : address
-   nft record
+- `admin_in` : address  
+   admin address
 
 outputs:
 
