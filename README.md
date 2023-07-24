@@ -22,18 +22,18 @@ struct NftInfo {
     holder: address, // owner address
     minter: address, // minter address
     hash: filed,     // bhp256_hash(NftHash)
-    uri: Field2,      // image content ipfs url
+    uri: Field2,     // image content ipfs url
 }
 ```
 
 ```js
 struct Order {
-    holder: address,  // owner address
+    holder: address, // owner address
     minter: address, // minter address
     hash: field,     // bhp256_hash(NftHash)
     uri: Field2,     // image content ipfs url
-    order_type: u8,        // order type, 0:non-trading 1:normal 2:auction（Todo）
-    amount: u128,   // minumum amount
+    order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
+    amount: u128,    // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
     deadline: field  // the timestamp to finish order -- blocknumber or timestamp
 }
@@ -43,7 +43,7 @@ struct Order {
 struct Bid {
     bidder: address,    // bidder address
     hash: field,        // id
-    amount: u128,      // bidding amount
+    amount: u128,       // bidding amount
 }
 ```
 
@@ -56,7 +56,6 @@ record Nft {
     uri: Field2,             // NFT content
 }
 ```
-
 
 ## Public states
 
@@ -249,7 +248,9 @@ inputs:
 
 outputs:
 
-- success --`Bid` record to admin, if amount greater than previous, refund the previous. Otherwise, tx will fail.
+- `BidRecord` record
+
+- success --`BidRecord` record to admin, if amount greater than previous, refund the previous. Otherwise, tx will fail.
 
 usage:
 

@@ -38,6 +38,13 @@ program artgo_aigc_v1.aleo{
         amount: u128,
     }
 
+    record BidRecord {
+        owner: address,     
+        bidder: address,
+        hash: field,
+        amount: field,
+    }
+
     record Nft {
         owner: address,
         minter: address,
@@ -196,11 +203,17 @@ program artgo_aigc_v1.aleo{
         public hash: field, 
         public amount: field,
         public admin_in: address,
-    ) -> (credits.leo/credits) {
+    ) -> (BidRecord, credits.leo/credits) {
         assert(amount > 0field && amount <= 18446744073709551615field);
         //Todo:: charge fee
+        let bid_record: BidRecord = BidRecord {
+            owner: admin_in,
+            bidder: self.caller,
+            hash: hash,
+            amount: amount,
+        };
         let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount as u64);
-        return change then finalize(self.caller, hash, amount as u128 , admin_in);
+        return (bid_record, change) then finalize(self.caller, hash, amount as u128 , admin_in);
     }
 
     finalize bid_order (
