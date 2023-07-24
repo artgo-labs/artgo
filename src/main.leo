@@ -126,6 +126,9 @@ program artgo_aigc_v1.aleo{
         nft: Nft, 
         receiver: address
     ) -> Nft {
+        //verify owner
+        assert(nft.owner == self.caller);
+
         // Produce a Nft record for the specified receiver.
         let transferred: Nft = Nft {
             owner: receiver,
