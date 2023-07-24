@@ -103,13 +103,13 @@ Store all the bids.
   
 inputs:
 
-- `prompt` : Field2.private
+- `prompt` : Field2.private  
   nft prompt
 
-- `uri` : Field2.public
+- `uri` : Field2.public  
     image content
 
-- `nonce` : field.public
+- `nonce` : field.public  
     random unique number
 
 outputs:
@@ -159,10 +159,10 @@ curl --location 'http://127.0.0.1:3030/testnet3/program/aigc.aleo/mapping/nfts/1
 
 inputs:
 
-- `NFT` record
+- `NFT` record  
   NFT to auction
 
-- `receiver` address
+- `receiver` address  
   Minimum amount for auction
 
 outputs:
@@ -183,21 +183,21 @@ TBD
 
 inputs:
 
-- `NFT` record
+- `NFT` record  
   NFT to auction
 
-- `order_type` order type
+- `order_type` order type  
       0 - non-trading
       1 - normal
       2 - auction
 
-- `amount` field
+- `amount` field  
   Minimum amount for auction
 
-- `deadline` field
+- `deadline` field  
   the timestamp to finish order
 
-- `admin_in` address
+- `admin_in` address  
   admin address
 
 outputs:
@@ -218,7 +218,7 @@ TBD
 
 inputs:
 
-- `hash` : field
+- `hash` : field  
    nft hash
   
 usage:
@@ -235,16 +235,16 @@ TBD
 
 inputs:
 
-- `credit` : Record
+- `credit` : Record  
    Aleo Credit record
 
-- `hash` : field
+- `hash` : field  
    nft hash
   
-- `amount` : field
+- `amount` : field  
   bid amount
 
-- `admin_in` address
+- `admin_in` address  
   admin address
 
 outputs:
@@ -266,7 +266,7 @@ TBD
 
 inputs:
 
-- `nft` : `NFT` record
+- `nft` : `NFT` record  
    nft record
 
 - `winner` : address  
