@@ -291,33 +291,30 @@ program artgo_aigc_v1.aleo{
         assert(bid.amount == winner_amount);
 
         //Todo::clear mappings
-
     }
 
     //Todo::cancel order
     //Todo::handle cancel order
 
     //admin functions
-    transition init() {
-        return then finalize(self.caller);
+    transition set_admin(admin_new: address) {
+        return then finalize(self.caller, admin_new);
     }
 
-    finalize init(public caller: address) {
-       let admin_inuse: address = Mapping::get_or_use(admin, true, 
-            aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
+    finalize set_admin(public caller: address, admin_new: address) {
+       let admin_inuse: address = Mapping::get_or_use(admin, true, aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
         assert_eq(admin_inuse, caller);
-        Mapping::set(admin, true, admin_inuse);
+        Mapping::set(admin, true, admin_new);
     }
 
-    transition change_admin (new: address) {
-        return then finalize(self.caller, new);
+    transition change_admin (admin_new: address) {
+        return then finalize(self.caller, admin_new);
     }
 
-    finalize change_admin (caller: address, new: address) {
+    finalize change_admin (caller: address, admin_new: address) {
         let admin_inuse: address = Mapping::get(admin, true);
         assert_eq(caller, admin_inuse);
-        Mapping::set(admin, true, new);
-    
+        Mapping::set(admin, true, admin_new);
     }
 
     //Todo:: change fee setting
