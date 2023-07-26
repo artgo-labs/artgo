@@ -312,7 +312,7 @@ snarkos developer deploy
 -r "{  owner: aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px.private,  microcredits: 93750000000000u64.private,  _nonce: 878010960996471104548362432643577968735743754584843045001751072533354535962group.public}" 
 --query "http://localhost:3030" 
 --broadcast "http://localhost:3030/testnet3/transaction/broadcast" 
--p "APrivateKey1zkp8CZNn3yeCseEtxuVPbDCwSyhGW6yZKUYKfgXmcpoGPWH" 
+-p ${privatekey} 
 artgo_aigc_v1.aleo
 ```
 
@@ -320,8 +320,12 @@ artgo_aigc_v1.aleo
 
 aigc program testnet3 deployed:
 
+v1 deployed:
+txid: at1gz5azfpd0xegxxnan9j9yy0fujghvtrfdqkad0gplwf95z38s5gqfvsvp4
+
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo'
 
 mapping query:
 
-curl --location 'http://testnet3.artgo.app/testnet3/program/aigc.aleo/mapping/tokenId/true'
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/mapping/tokenId/true'
 ```
