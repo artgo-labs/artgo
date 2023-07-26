@@ -1,4 +1,6 @@
-    // The 'artgo_aigc_v1.aleo' program.
+import credits.leo;
+
+// The 'artgo_aigc_v1.aleo' program.
 program artgo_aigc_v1.aleo{
 
     struct Field2 {
@@ -6,74 +8,424 @@ program artgo_aigc_v1.aleo{
         second: field,
     }
 
-    struct TokenId {
-        next_token_id: field,
-    }
-
     struct NftHash {
+        minter: address,
         prompt: Field2,
+        nonce: field,
     }
 
     struct NftInfo {
         holder: address,
+        minter: address,
         hash: field,
         uri: Field2,
     }
 
-    record Nft {
-        owner: address,
+    struct Order {
         holder: address,
-        prompt: Field2,
+        hash: field,
         uri: Field2,
+        order_type: u8,
+        amount: u128,
+        status: u8,
+        deadline: field,
     }
 
-    record Bid {
-        owner: address,     // bid owner
+    struct Bid {
         bidder: address,    // bidder address
-        nft_id: field,      // id
-        gates: u64,         // bid amount
-        is_winner: bool     // bid result
+        hash: field,
+        amount: u128,
+    }
+
+    record BidRecord {
+        bid_type: u8,           //1-bid, 2-cancel
+        owner: address,     
+        bidder: address,
+        hash: field,
+        amount: field,
+    }
+
+    record Nft {
+        owner: address,
+        minter: address,
+        prompt: Field2,
+        nonce: field,
+        uri: Field2,
     }
 
     //nft id --> nft info
     mapping nfts: field => NftInfo;
     //true --> max token id
-    mapping tokenId: bool => TokenId;
+    mapping tokenId: bool => field;
+    //true --> admin
+    mapping admin: bool => address;
+    //nft hash --> Order
+    mapping orders: field => Order;
+    //nft hash --> bid
+    mapping bids: field => Bid;
 
     // mint aigc nft
-    transition mint_nft(private prompt: Field2, public uri: Field2) -> Nft {
+    transition mint_nft (
+        private prompt: Field2, 
+        public uri: Field2, 
+        public nonce: field
+    ) -> Nft {
 
         let digest: NftHash = NftHash {
+            minter: self.caller,
             prompt: prompt,
+            nonce: nonce,
         };
 
         let hash: field = BHP256::hash_to_field(digest);
 
         let nft: Nft = Nft {
             owner: self.caller,
-            holder: self.caller,
+            minter: self.caller,
             prompt: prompt,
+            nonce: nonce,
             uri: uri,
         };
 
-        return nft then finalize(self.caller, hash, uri);
+        let order: Order = Order{
+            holder: self.caller,
+            hash: hash,
+            uri: uri,
+            order_type: 0u8,
+            amount: 0u128,
+            status: 0u8,
+            deadline: 0field,
+        };
+
+        return nft then finalize(self.caller, hash, uri, order);
     }
 
-    finalize mint_nft(holder: address, hash: field, uri: Field2) {
-        let token_id: TokenId = Mapping::get_or_use(tokenId, true, TokenId {
-            next_token_id: 1field,
-        });
-
-        let num: field = token_id.next_token_id;
-        Mapping::set(tokenId, true, TokenId {
-            next_token_id: num + 1field,
-        });
+    finalize mint_nft (
+        holder: address, 
+        hash: field, 
+        uri: Field2, 
+        order: Order
+    ) {
+        let token_id: field = Mapping::get_or_use(tokenId, true, 1field);
+        Mapping::set(tokenId, true, token_id + 1field);
 
         let info: NftInfo = NftInfo{
             holder: holder,
+            minter: holder,
             hash: hash,
             uri: uri,
         };
-        Mapping::set(nfts, num, info);
+        Mapping::set(nfts, token_id, info);
+        // update orders
+        assert(!Mapping::contains(orders, hash));
+        Mapping::set(orders, hash, order);
     }
+
+    transition transfer_private_nft (
+        nft: Nft, 
+        receiver: address
+    ) -> Nft {
+        //verify owner
+        assert(nft.owner == self.caller);
+
+        // Produce a Nft record for the specified receiver.
+        let transferred: Nft = Nft {
+            owner: receiver,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        return transferred;
+    }
+
+    transition place_order (
+        private nft: Nft, 
+        public order_type: u8, 
+        public amount: field, 
+        public deadline: field, 
+        public admin_in: address
+    ) -> Nft {
+        //Only support buy / sell atm
+        assert(order_type == 1u8);    
+        assert(amount > 0field && amount <= 18446744073709551615field);
+
+        let digest: NftHash = NftHash {
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+        };
+
+        let hash: field = BHP256::hash_to_field(digest);
+
+        // find order based on hash offchain
+        let nft_transfer : Nft = Nft {
+            owner: admin_in,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        return nft_transfer then finalize(admin_in, hash, order_type, amount, deadline);
+    }
+
+    finalize place_order (
+        admin_in: address, 
+        hash: field, 
+        order_type: u8, 
+        amount: field, 
+        deadline: field
+    ) {
+        //Get admin
+        assert(Mapping::contains(admin, true));
+        let admin_inuse: address = Mapping::get(admin, true);
+        assert_eq(admin_inuse, admin_in);
+
+        //update order information
+        assert(Mapping::contains(orders, hash));
+        let order: Order = Mapping::get(orders, hash);
+        let order_update : Order = Order {
+            holder: order.holder,
+            hash: order.hash,
+            uri: order.uri,
+            amount: amount as u128,
+            order_type: order_type,
+            status: 1u8,
+            deadline: 0field,
+        };
+
+        Mapping::set(orders, hash, order_update);
+    }
+
+    transition update_order (
+        private credit: credits.leo/credits, 
+        public hash: field,
+        public old_amount: field,
+        public new_amount: field,
+        public admin_in: address,
+    ) ->(credits.leo/credits) {
+        assert(old_amount != new_amount);
+        assert(old_amount > 0field && old_amount <= 18446744073709551615field);
+        assert(new_amount > 0field && new_amount <= 18446744073709551615field);
+
+        let amount_return: field = 0field;
+        if (new_amount > old_amount) {
+            let amount: field = new_amount - old_amount;
+            let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount as u64);
+            amount_return = change.microcredits as field;
+            //return change then finalize(self.caller, hash, old_amount, new_amount);
+        } else {
+            //refund public aleo 
+            let amount: field = old_amount - new_amount;
+            credits.leo/transfer_public(self.caller, amount as u64);
+            amount_return = 0field;
+        }
+
+        let credit_change: credits = credits {
+            owner: self.caller,
+            microcredits: amount_return as u64,
+        };
+
+        return credit_change then finalize(self.caller, hash, old_amount, new_amount);
+    }
+
+    finalize update_order (
+        owner: address,
+        hash: field,
+        amount_old: field,
+        amount_new: field,
+    ) {
+        let order: Order = Mapping::get(orders, hash);
+        assert(order.status == 1u8);
+        assert(amount_old as u128 == order.amount);
+        assert(owner == order.holder);
+
+        let order_update : Order = Order {
+            holder: order.holder,
+            hash: order.hash,
+            uri: order.uri,
+            amount: amount_new as u128,
+            order_type: order.order_type,
+            status: order.status,
+            deadline: order.deadline,
+        };
+
+        Mapping::set(orders, hash, order_update);
+    }
+
+    transition cancel_order (
+        public hash: field,
+        public admin_in: address,
+    ) -> (BidRecord) {
+        let bid_record: BidRecord = BidRecord {
+            owner: admin_in,
+            bid_type: 2u8,
+            bidder: self.caller,
+            hash: hash,
+            amount: 0field,
+        };
+        return bid_record then finalize(self.caller, hash, admin_in);
+        
+    }
+
+    finalize cancel_order (
+        owner: address,
+        hash: field,
+        admin_in: address,
+    ) {
+        let order: Order = Mapping::get(orders, hash);
+        assert(order.status == 1u8);
+        assert(owner == order.holder);
+
+        assert(Mapping::contains(admin, true));
+        let admin_inuse: address = Mapping::get(admin, true);
+        assert_eq(admin_inuse, admin_in);
+
+        let order_update : Order = Order {
+            holder: order.holder,
+            hash: order.hash,
+            uri: order.uri,
+            amount: order.amount,
+            order_type: order.order_type,
+            status: 2u8,
+            deadline: order.deadline,
+        };
+
+        Mapping::set(orders, hash, order_update);
+    }
+
+    //Todo::handle cancel order, delete states
+
+    transition bid_order (
+        private credit: credits.leo/credits, 
+        public hash: field, 
+        public amount: field,
+        public admin_in: address,
+    ) -> (BidRecord, credits.leo/credits) {
+        assert(amount > 0field && amount <= 18446744073709551615field);
+        //Todo:: charge fee
+        let bid_record: BidRecord = BidRecord {
+            owner: admin_in,
+            bid_type: 1u8,
+            bidder: self.caller,
+            hash: hash,
+            amount: amount,
+        };
+        let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount as u64);
+        return (bid_record, change) then finalize(self.caller, hash, amount as u128 , admin_in);
+    }
+
+    finalize bid_order (
+        caller: address,
+        hash: field,
+        amount: u128,
+        admin_in: address,
+    ) {
+        //verify admin
+        assert(Mapping::contains(admin, true));
+        let admin_inuse: address = Mapping::get(admin, true);
+        assert_eq(admin_inuse, admin_in);
+
+        let bid : Bid = Bid {
+            bidder: caller,
+            hash: hash,
+            amount : amount,
+        };
+        Mapping::set(bids, hash, bid);
+
+        assert(Mapping::contains(orders, hash));
+        let order: Order = Mapping::get(orders, hash);
+        assert(order.status == 1u8);
+        assert(amount as u128 >= order.amount);
+
+        let order_update : Order = Order {
+            holder: order.holder,
+            hash: order.hash,
+            uri: order.uri,
+            amount: order.amount,
+            order_type: order.order_type,
+            status: 3u8,
+            deadline: 0field,
+        };
+
+        Mapping::set(orders, hash, order_update);
+    }
+
+    transition finish_order (
+        private nft: Nft,
+        public winner: address,
+        public winner_amount: field,
+        public admin_in: address,
+    ) -> (Nft){
+        //Todo:: charge fee
+        assert(winner_amount > 0field && winner_amount <= 18446744073709551615field);
+        credits.leo/transfer_public(winner, winner_amount as u64);
+
+        let digest: NftHash = NftHash {
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+        };
+
+        let hash: field = BHP256::hash_to_field(digest);
+        let nft_transfer : Nft = Nft {
+            owner: winner,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        return nft_transfer then finalize(hash, winner, winner_amount as u128, admin_in);
+    }
+
+    finalize finish_order (
+        hash: field,
+        winner: address,
+        winner_amount: u128,
+        admin_in: address
+    ) {
+        //verify admin
+        assert(Mapping::contains(admin, true));
+        let admin_inuse: address = Mapping::get(admin, true);
+        assert_eq(admin_inuse, admin_in);
+
+        //verify order
+        assert(Mapping::contains(orders, hash));
+        let order: Order = Mapping::get(orders, hash);
+        assert_eq(order.status, 3u8);
+
+        //verify bid
+        assert(Mapping::contains(bids, hash));
+        let bid: Bid = Mapping::get(bids, hash);
+        assert_eq(bid.bidder, winner);
+        assert(bid.amount == winner_amount);
+
+        //Todo::clear mappings
+    }
+
+    //admin functions
+    transition set_admin(admin_new: address) {
+        return then finalize(self.caller, admin_new);
+    }
+
+    finalize set_admin(public caller: address, admin_new: address) {
+       let admin_inuse: address = Mapping::get_or_use(admin, true, aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
+        assert_eq(admin_inuse, caller);
+        Mapping::set(admin, true, admin_new);
+    }
+
+    transition change_admin (admin_new: address) {
+        return then finalize(self.caller, admin_new);
+    }
+
+    finalize change_admin (caller: address, admin_new: address) {
+        let admin_inuse: address = Mapping::get(admin, true);
+        assert_eq(caller, admin_inuse);
+        Mapping::set(admin, true, admin_new);
+    }
+
+    //Todo:: change fee setting
 }

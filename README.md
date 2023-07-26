@@ -12,29 +12,47 @@ This documentation will introduce the program from technical side, keep updating
 ## Struct
 
 ```js
+struct Field2 {
+    first: field,   // the first half
+    second: field,  // the second half
+}
+```
+
+```js
 struct NftHash {
+    minter: address      // creator
     prompt: Field2,      // prompt command to generate image
+    nonce: field,        // random number to unique nft
 }
 ```
 
 ```js
 struct NftInfo {
-    holder: address, // holder address
-    hash: filed,     // bhp256_hash({prompt: field})
-    uri: Field2,      // image content ipfs url
+    holder: address, // owner address
+    minter: address, // minter address
+    hash: filed,     // bhp256_hash(NftHash)
+    uri: Field2,     // image content ipfs url
 }
 ```
 
 ```js
-struct TokenId {
-    next_token_id: field,   // max nft id
+struct Order {
+    holder: address, // owner address
+    minter: address, // minter address
+    hash: field,     // bhp256_hash(NftHash)
+    uri: Field2,     // image content ipfs url
+    order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
+    amount: u128,    // minumum amount
+    status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
+    deadline: field  // the timestamp to finish order -- blocknumber or timestamp
 }
 ```
 
 ```js
-struct Field2 {
-    first: field,   // the first half
-    second: field,  // the second half
+struct Bid {
+    bidder: address,    // bidder address
+    hash: field,        // id
+    amount: u128,       // bidding amount
 }
 ```
 
@@ -43,21 +61,18 @@ record Nft {
     owner: address,         // NFT owner
     minter: address,        // NFT minter
     prompt: Field2,          // NFT prompt, hidden
-    uri: Field2,              // NFT content
-}
-```
-
-```js
-record Bid {
-    owner: address,     // bid owner
-    bidder: address,    // bidder address
-    nft_id: field,      // id
-    gates: u64,         // bid amount
-    is_winner: bool     // bid result
+    nonce: field             // random number to unique nft
+    uri: Field2,             // NFT content
 }
 ```
 
 ## Public states
+
+### tokenId
+
+mapping
+Store the maximum tokenid.  
+`tokenId` store: `bool => field`;
 
 ### nfts
 
@@ -67,11 +82,23 @@ Store all the minted nfts.
 `nfts` store: `id => NftInfo`  
 `id` id++ from 1
 
-### tokenId
+### admin
 
 mapping
-Store the maximum tokenid.  
-`tokenId` store: `bool => TokenId`;
+Store admin.
+`admin` store: `bool => address`;
+
+### orders
+
+mapping
+Store all the orders.
+`orders` store: `field => Order`;
+
+### bids
+
+mapping
+Store all the bids.
+`bids` store: `field => Bid`;
 
 ## Interfaces
 
@@ -84,11 +111,14 @@ Store the maximum tokenid.
   
 inputs:
 
-- `prompt` : Field2.private
+- `prompt` : Field2.private  
   nft prompt
 
-- `uri` : Field2
+- `uri` : Field2.public  
     image content
+
+- `nonce` : field.public  
+    random unique number
 
 outputs:
 
@@ -129,19 +159,54 @@ curl --location 'http://127.0.0.1:3030/testnet3/program/aigc.aleo/mapping/nfts/1
 
 ```
 
-### start_auction(TBD)
+### transfer_private_nft
 
-`start_auction` used to start an auction.
+`transfer_private_nft` used to tranfer nft.
 
-- start auction, permisionless。
+- transfer nft, permisionless.
 
 inputs:
 
-- `NFT` record
+- `NFT` record  
   NFT to auction
 
-- `amount` u128
+- `receiver` address  
   Minimum amount for auction
+
+outputs:
+
+- `NFT` record to receiver
+
+usage:
+
+```shell
+TBD
+```
+
+### place_order
+
+`place_order` used to start an order.
+
+- place order, permisionless。
+
+inputs:
+
+- `NFT` record  
+  NFT to auction
+
+- `order_type` order type  
+      0 - non-trading
+      1 - normal
+      2 - auction
+
+- `amount` field  
+  Minimum amount for auction
+
+- `deadline` field  
+  the timestamp to finish order
+
+- `admin_in` address  
+  admin address
 
 outputs:
 
@@ -153,26 +218,48 @@ usage:
 TBD
 ```
 
-### bid_auction & bid_confirm (TBD)
+### cancel_order(TBD)
 
-`bid_auction` to bid for NFT.
+`cancel_order` used to cancel an order.'
 
-- bid auction, permisionless 。
+- cancel order, permisionless.
 
 inputs:
 
-- `id` : field
-   nft id
+- `hash` : field  
+   nft hash
   
-- `bidder` : address
-  bidder address
+usage:
 
-- `amount` : u64
+```shell
+TBD
+```
+
+### bid_order
+
+`bid_order` to bid for NFT.
+
+- bid order, permisionless.
+
+inputs:
+
+- `credit` : Record  
+   Aleo Credit record
+
+- `hash` : field  
+   nft hash
+  
+- `amount` : field  
   bid amount
+
+- `admin_in` address  
+  admin address
 
 outputs:
 
-- success --`Bid` record to admin
+- `BidRecord` record
+
+- success --`BidRecord` record to admin, if amount greater than previous, refund the previous. Otherwise, tx will fail.
 
 usage:
 
@@ -180,25 +267,30 @@ usage:
 TBD
 ```
 
-### finish_auction (TBD)
+### finish_order
 
-`finish_auction` to finish an auction.
+`finish_order` to finish an order.
 
-- finish auction, only admin
+- finish order, only admin
+- delete mapping when nft not sold.
 
 inputs:
 
-- `nft` : `NFT` record
+- `nft` : `NFT` record  
    nft record
+
+- `winner` : address  
+   winner address
+
+- `winner_amount` : field  
+   winner amount
   
-- `winner` : `Bid` record
-  bid record
+- `admin_in` : address  
+   admin address
 
 outputs:
 
 - `NFT` record to winner
-
-- `Bid` record to seller
 
 usage:
 
@@ -208,7 +300,7 @@ TBD
 
 ## Workflow (TBD)
 
-![avatar](./artgo.jpg)
+![avatar](./artgo.png)
 
 ## Build Guide
 
