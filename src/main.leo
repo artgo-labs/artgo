@@ -23,7 +23,6 @@ program artgo_aigc_v1.aleo{
 
     struct Order {
         holder: address,
-        minter: address,
         hash: field,
         uri: Field2,
         order_type: u8,
@@ -39,6 +38,7 @@ program artgo_aigc_v1.aleo{
     }
 
     record BidRecord {
+        bid_type: u8,           //1-bid, 2-cancel
         owner: address,     
         bidder: address,
         hash: field,
@@ -89,7 +89,6 @@ program artgo_aigc_v1.aleo{
 
         let order: Order = Order{
             holder: self.caller,
-            minter: self.caller,
             hash: hash,
             uri: uri,
             order_type: 0u8,
@@ -189,7 +188,6 @@ program artgo_aigc_v1.aleo{
         let order: Order = Mapping::get(orders, hash);
         let order_update : Order = Order {
             holder: order.holder,
-            minter: order.minter,
             hash: order.hash,
             uri: order.uri,
             amount: amount as u128,
@@ -201,6 +199,96 @@ program artgo_aigc_v1.aleo{
         Mapping::set(orders, hash, order_update);
     }
 
+    transition update_order (
+        private credit: credits.leo/credits, 
+        public hash: field,
+        public old_amount: field,
+        public new_amount: field,
+        public admin_in: address,
+    ) ->(credits.leo/credits) {
+        assert(old_amount != new_amount);
+        assert(old_amount > 0field && old_amount <= 18446744073709551615field);
+        assert(new_amount > 0field && new_amount <= 18446744073709551615field);
+
+        let amount: field = 0field;
+        if (new_amount > old_amount) {
+            amount = new_amount - old_amount;
+            let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount as u64);
+            //return change then finalize(self.caller, hash, old_amount, new_amount);
+        } else {
+            amount = old_amount - new_amount;
+            credits.leo/transfer_public(self.caller, amount as u64);
+        }
+        return credit then finalize(self.caller, hash, old_amount, new_amount);
+    }
+
+    finalize update_order (
+        owner: address,
+        hash: field,
+        amount_old: field,
+        amount_new: field,
+    ) {
+        let order: Order = Mapping::get(orders, hash);
+        assert(order.status == 1u8);
+        assert(amount_old as u128 == order.amount);
+        assert(owner == order.holder);
+
+        let order_update : Order = Order {
+            holder: order.holder,
+            hash: order.hash,
+            uri: order.uri,
+            amount: amount_new as u128,
+            order_type: order.order_type,
+            status: order.status,
+            deadline: order.deadline,
+        };
+
+        Mapping::set(orders, hash, order_update);
+    }
+
+    transition cancel_order (
+        public hash: field,
+        public admin_in: address,
+    ) -> (BidRecord) {
+        let bid_record: BidRecord = BidRecord {
+            owner: admin_in,
+            bid_type: 2u8,
+            bidder: self.caller,
+            hash: hash,
+            amount: 0field,
+        };
+        return bid_record then finalize(self.caller, hash, admin_in);
+        
+    }
+
+    finalize cancel_order (
+        owner: address,
+        hash: field,
+        admin_in: address,
+    ) {
+        let order: Order = Mapping::get(orders, hash);
+        assert(order.status == 1u8);
+        assert(owner == order.holder);
+
+        assert(Mapping::contains(admin, true));
+        let admin_inuse: address = Mapping::get(admin, true);
+        assert_eq(admin_inuse, admin_in);
+
+        let order_update : Order = Order {
+            holder: order.holder,
+            hash: order.hash,
+            uri: order.uri,
+            amount: order.amount,
+            order_type: order.order_type,
+            status: 2u8,
+            deadline: order.deadline,
+        };
+
+        Mapping::set(orders, hash, order_update);
+    }
+
+    //Todo::handle cancel order, delete states
+
     transition bid_order (
         private credit: credits.leo/credits, 
         public hash: field, 
@@ -211,6 +299,7 @@ program artgo_aigc_v1.aleo{
         //Todo:: charge fee
         let bid_record: BidRecord = BidRecord {
             owner: admin_in,
+            bid_type: 1u8,
             bidder: self.caller,
             hash: hash,
             amount: amount,
@@ -244,7 +333,6 @@ program artgo_aigc_v1.aleo{
 
         let order_update : Order = Order {
             holder: order.holder,
-            minter: order.minter,
             hash: order.hash,
             uri: order.uri,
             amount: order.amount,
@@ -308,9 +396,6 @@ program artgo_aigc_v1.aleo{
 
         //Todo::clear mappings
     }
-
-    //Todo::cancel order
-    //Todo::handle cancel order
 
     //admin functions
     transition set_admin(admin_new: address) {
