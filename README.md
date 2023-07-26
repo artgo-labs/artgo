@@ -209,7 +209,41 @@ usage:
 TBD
 ```
 
-### cancel_order(TBD)
+### update_order
+
+`update_order` used to update an order.'
+
+- update order, permisionless.
+
+inputs:
+
+- `credit` : Record  
+   Aleo Credit record
+
+- `hash` : field  
+   nft hash
+
+- `old_amount` : field  
+   order old amount
+
+- `new_amount` : field  
+   order new amount
+
+- `admin_in` address  
+  admin address
+
+outputs:
+
+- `credit` record  
+    Aleo Credit record
+
+usage:
+
+```shell
+TBD
+```
+
+### cancel_order
 
 `cancel_order` used to cancel an order.'
 
@@ -219,6 +253,13 @@ inputs:
 
 - `hash` : field  
    nft hash
+
+- `admin_in` address  
+  admin address
+
+outputs:
+
+- `BidRecord` record
   
 usage:
 
