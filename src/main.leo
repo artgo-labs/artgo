@@ -210,16 +210,25 @@ program artgo_aigc_v1.aleo{
         assert(old_amount > 0field && old_amount <= 18446744073709551615field);
         assert(new_amount > 0field && new_amount <= 18446744073709551615field);
 
-        let amount: field = 0field;
+        let amount_return: field = 0field;
         if (new_amount > old_amount) {
-            amount = new_amount - old_amount;
+            let amount: field = new_amount - old_amount;
             let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount as u64);
+            amount_return = change.microcredits as field;
             //return change then finalize(self.caller, hash, old_amount, new_amount);
         } else {
-            amount = old_amount - new_amount;
+            //refund public aleo 
+            let amount: field = old_amount - new_amount;
             credits.leo/transfer_public(self.caller, amount as u64);
+            amount_return = 0field;
         }
-        return credit then finalize(self.caller, hash, old_amount, new_amount);
+
+        let credit_change: credits = credits {
+            owner: self.caller,
+            microcredits: amount_return as u64,
+        };
+
+        return credit_change then finalize(self.caller, hash, old_amount, new_amount);
     }
 
     finalize update_order (
