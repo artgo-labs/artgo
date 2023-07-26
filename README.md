@@ -48,6 +48,16 @@ struct Bid {
 ```
 
 ```js
+record BidRecord {
+    bid_type: u8,        // 1-bid, 2-cancel
+    owner: address,     
+    bidder: address,
+    hash: field,
+    amount: field,
+}
+```
+
+```js
 record Nft {
     owner: address,         // NFT owner
     minter: address,        // NFT minter
