@@ -58,7 +58,7 @@ program artgo_aigc_v1.aleo{
     mapping tokenId: bool => field;
     //true --> admin
     mapping admin: bool => address;
-    //nft hash --> Order
+    //nft id --> Order
     mapping orders: field => Order;
     //nft hash --> bid
     mapping bids: field => Bid;

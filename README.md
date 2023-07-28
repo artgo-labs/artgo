@@ -30,8 +30,7 @@ struct NftInfo {
 struct Order {
     holder: address, // owner address
     minter: address, // minter address
-    hash: field,     // bhp256_hash(NftHash)
-    uri: Field2,     // image content ipfs url
+    nft_id: field,     // nft id
     order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
     amount: u128,    // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
@@ -42,7 +41,7 @@ struct Order {
 ```js
 struct Bid {
     bidder: address,    // bidder address
-    hash: field,        // id
+    nft_id: field,        // id
     amount: u128,       // bidding amount
 }
 ```
@@ -52,7 +51,7 @@ record BidRecord {
     bid_type: u8,        // 1-bid, 2-cancel
     owner: address,     
     bidder: address,
-    hash: field,
+    nft_id: field,
     amount: field,
 }
 ```
@@ -192,6 +191,9 @@ TBD
 
 inputs:
 
+- `nft_id` field  
+  NFT id
+
 - `NFT` record  
   NFT to auction
 
@@ -227,25 +229,13 @@ TBD
 
 inputs:
 
-- `credit` : Record  
-   Aleo Credit record
-
-- `hash` : field  
-   nft hash
-
-- `old_amount` : field  
-   order old amount
+- `nft_id` : field  
+   nft id
 
 - `new_amount` : field  
    order new amount
 
-- `admin_in` address  
-  admin address
-
 outputs:
-
-- `credit` record  
-    Aleo Credit record
 
 usage:
 
@@ -261,8 +251,8 @@ TBD
 
 inputs:
 
-- `hash` : field  
-   nft hash
+- `nft_id` : field  
+   nft id
 
 - `admin_in` address  
   admin address
@@ -288,7 +278,7 @@ inputs:
 - `credit` : Record  
    Aleo Credit record
 
-- `hash` : field  
+- `nft_id` : field  
    nft hash
   
 - `amount` : field  
