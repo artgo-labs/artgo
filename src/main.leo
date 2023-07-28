@@ -60,7 +60,7 @@ program artgo_aigc_v1.aleo{
     mapping admin: bool => address;
     //nft id --> Order
     mapping orders: field => Order;
-    //nft hash --> bid
+    //nft id --> bid
     mapping bids: field => Bid;
 
     // mint aigc nft
@@ -104,7 +104,6 @@ program artgo_aigc_v1.aleo{
             uri: uri,
         };
         Mapping::set(nfts, token_id, info);
-        // move update order to place order
     }
 
     transition transfer_private_nft (
@@ -219,6 +218,7 @@ program artgo_aigc_v1.aleo{
         public nft_id: field,
         public admin_in: address,
     ) -> (BidRecord) {
+        //Todo:: charge fee
         let bid_record: BidRecord = BidRecord {
             owner: admin_in,
             bid_type: 2u8,
@@ -264,7 +264,6 @@ program artgo_aigc_v1.aleo{
         public admin_in: address,
     ) -> (BidRecord, credits.leo/credits) {
         assert(amount > 0field && amount <= 18446744073709551615field);
-        //Todo:: charge fee
         let bid_record: BidRecord = BidRecord {
             owner: admin_in,
             bid_type: 1u8,
@@ -312,6 +311,7 @@ program artgo_aigc_v1.aleo{
     }
 
     transition finish_order (
+        public nft_id: field,
         private nft: Nft,
         public winner: address,
         public winner_amount: field,
@@ -336,10 +336,11 @@ program artgo_aigc_v1.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(hash, winner, winner_amount as u128, admin_in);
+        return nft_transfer then finalize(nft_id, hash, winner, winner_amount as u128, admin_in);
     }
 
     finalize finish_order (
+        nft_id: field,
         hash: field,
         winner: address,
         winner_amount: u128,
@@ -351,13 +352,17 @@ program artgo_aigc_v1.aleo{
         assert_eq(admin_inuse, admin_in);
 
         //verify order
-        assert(Mapping::contains(orders, hash));
-        let order: Order = Mapping::get(orders, hash);
+        assert(Mapping::contains(orders, nft_id));
+        let order: Order = Mapping::get(orders, nft_id);
         assert_eq(order.status, 3u8);
 
+        //verify nft
+        let nft: NftInfo = Mapping::get(nfts, nft_id);
+        assert_eq(nft.hash, hash);
+
         //verify bid
-        assert(Mapping::contains(bids, hash));
-        let bid: Bid = Mapping::get(bids, hash);
+        assert(Mapping::contains(bids, nft_id));
+        let bid: Bid = Mapping::get(bids, nft_id);
         assert_eq(bid.bidder, winner);
         assert(bid.amount == winner_amount);
 

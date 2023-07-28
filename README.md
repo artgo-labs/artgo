@@ -77,7 +77,7 @@ Store the maximum tokenid.
 ### nfts
 
 mapping
-Store all the minted nfts.
+Store all the minted nfts.  
 
 `nfts` store: `id => NftInfo`  
 `id` id++ from 1
@@ -85,20 +85,23 @@ Store all the minted nfts.
 ### admin
 
 mapping
-Store admin.
-`admin` store: `bool => address`;
+Store admin.  
+`admin` store: `bool => address`;  
+
 
 ### orders
 
 mapping
-Store all the orders.
-`orders` store: `field => Order`;
+Store all the orders.  
+`orders` store: `field => Order`;  
+key: `nft id`
 
 ### bids
 
 mapping
 Store all the bids.
-`bids` store: `field => Bid`;
+`bids` store: `field => Bid`;  
+key: `nft id`
 
 ## Interfaces
 
@@ -307,6 +310,9 @@ TBD
 - delete mapping when nft not sold.
 
 inputs:
+
+- `nft_id` : field  
+   nft record
 
 - `nft` : `NFT` record  
    nft record
