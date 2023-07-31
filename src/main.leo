@@ -1,7 +1,7 @@
 import credits.leo;
 
 // The 'artgo_aigc_v1.aleo' program.
-program artgo_aigc_v1.aleo{
+program artgo_aigc_v1_1.aleo{
 
     struct Field2 {
         first: field,   
@@ -366,7 +366,9 @@ program artgo_aigc_v1.aleo{
         assert_eq(bid.bidder, winner);
         assert(bid.amount == winner_amount);
 
-        //Todo::clear mappings
+        //clear mappings
+        Mapping::remove(bids, nft_id);
+        Mapping::remove(orders, nft_id);
     }
 
     //admin functions
