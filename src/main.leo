@@ -339,6 +339,7 @@ program artgo_aigc_v1_1.aleo{
     ) -> (Nft){
         //Todo:: charge fee
         assert(winner_amount > 0field && winner_amount <= 18446744073709551615field);
+        assert_eq(self.caller, admin_in);
         credits.leo/transfer_public(winner, winner_amount as u64);
 
         let digest: NftHash = NftHash {

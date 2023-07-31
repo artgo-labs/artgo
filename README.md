@@ -372,10 +372,19 @@ aigc program testnet3 deployed:
 
 v1 deployed:
 txid: at1gz5azfpd0xegxxnan9j9yy0fujghvtrfdqkad0gplwf95z38s5gqfvsvp4
-
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo'
 
-mapping query:
+v1_1 deployed:
+txid: 
+at148r6xq7dadmw3a0e0afnwl303xphy4qeuhhge54283kx7tsxtgzqzcpk9a
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
+mapping query:
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
+
+v1:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/mapping/tokenId/true'
+
+v1_1:
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo/mapping/tokenId/true'
 ```
