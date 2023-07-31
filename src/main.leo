@@ -107,6 +107,7 @@ program artgo_aigc_v1_1.aleo{
     }
 
     transition transfer_private_nft (
+        nft_id: field,
         nft: Nft, 
         receiver: address
     ) -> Nft {
@@ -114,6 +115,15 @@ program artgo_aigc_v1_1.aleo{
         assert(nft.owner == self.caller);
 
         // Produce a Nft record for the specified receiver.
+        // check validity
+        let digest: NftHash = NftHash {
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+        };
+
+        let hash: field = BHP256::hash_to_field(digest);
+
         let transferred: Nft = Nft {
             owner: receiver,
             minter: nft.minter,
@@ -122,7 +132,17 @@ program artgo_aigc_v1_1.aleo{
             uri: nft.uri,
         };
 
-        return transferred;
+        return transferred then finalize(nft_id, hash, nft.uri);
+    }
+
+    finalize transfer_private_nft (
+        nft_id: field,
+        hash: field,
+        uri: Field2,
+    ) {
+        let nft: NftInfo = Mapping::get(nfts, nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
     }
 
     transition place_order (

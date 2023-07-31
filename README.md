@@ -170,6 +170,9 @@ curl --location 'http://127.0.0.1:3030/testnet3/program/aigc.aleo/mapping/nfts/1
 
 inputs:
 
+- `nft_id` field  
+  NFT id
+
 - `NFT` record  
   NFT to auction
 
