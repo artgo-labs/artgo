@@ -88,7 +88,6 @@ mapping
 Store admin.  
 `admin` store: `bool => address`;  
 
-
 ### orders
 
 mapping
