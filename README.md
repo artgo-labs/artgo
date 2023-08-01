@@ -39,8 +39,7 @@ struct NftInfo {
 struct Order {
     holder: address, // owner address
     minter: address, // minter address
-    hash: field,     // bhp256_hash(NftHash)
-    uri: Field2,     // image content ipfs url
+    nft_id: field,     // nft id
     order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
     amount: u128,    // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
@@ -51,8 +50,18 @@ struct Order {
 ```js
 struct Bid {
     bidder: address,    // bidder address
-    hash: field,        // id
+    nft_id: field,        // id
     amount: u128,       // bidding amount
+}
+```
+
+```js
+record BidRecord {
+    bid_type: u8,        // 1-bid, 2-cancel
+    owner: address,     
+    bidder: address,
+    nft_id: field,
+    amount: field,
 }
 ```
 
@@ -77,7 +86,7 @@ Store the maximum tokenid.
 ### nfts
 
 mapping
-Store all the minted nfts.
+Store all the minted nfts.  
 
 `nfts` store: `id => NftInfo`  
 `id` id++ from 1
@@ -85,20 +94,22 @@ Store all the minted nfts.
 ### admin
 
 mapping
-Store admin.
-`admin` store: `bool => address`;
+Store admin.  
+`admin` store: `bool => address`;  
 
 ### orders
 
 mapping
-Store all the orders.
-`orders` store: `field => Order`;
+Store all the orders.  
+`orders` store: `field => Order`;  
+key: `nft id`
 
 ### bids
 
 mapping
 Store all the bids.
-`bids` store: `field => Bid`;
+`bids` store: `field => Bid`;  
+key: `nft id`
 
 ## Interfaces
 
@@ -167,6 +178,9 @@ curl --location 'http://127.0.0.1:3030/testnet3/program/aigc.aleo/mapping/nfts/1
 
 inputs:
 
+- `nft_id` field  
+  NFT id
+
 - `NFT` record  
   NFT to auction
 
@@ -190,6 +204,9 @@ TBD
 - place order, permisionless。
 
 inputs:
+
+- `nft_id` field  
+  NFT id
 
 - `NFT` record  
   NFT to auction
@@ -218,7 +235,29 @@ usage:
 TBD
 ```
 
-### cancel_order(TBD)
+### update_order
+
+`update_order` used to update an order.'
+
+- update order, permisionless.
+
+inputs:
+
+- `nft_id` : field  
+   nft id
+
+- `new_amount` : field  
+   order new amount
+
+outputs:
+
+usage:
+
+```shell
+TBD
+```
+
+### cancel_order
 
 `cancel_order` used to cancel an order.'
 
@@ -226,8 +265,15 @@ TBD
 
 inputs:
 
-- `hash` : field  
-   nft hash
+- `nft_id` : field  
+   nft id
+
+- `admin_in` address  
+  admin address
+
+outputs:
+
+- `BidRecord` record
   
 usage:
 
@@ -246,7 +292,7 @@ inputs:
 - `credit` : Record  
    Aleo Credit record
 
-- `hash` : field  
+- `nft_id` : field  
    nft hash
   
 - `amount` : field  
@@ -275,6 +321,9 @@ TBD
 - delete mapping when nft not sold.
 
 inputs:
+
+- `nft_id` : field  
+   nft record
 
 - `nft` : `NFT` record  
    nft record
@@ -331,10 +380,19 @@ aigc program testnet3 deployed:
 
 v1 deployed:
 txid: at1gz5azfpd0xegxxnan9j9yy0fujghvtrfdqkad0gplwf95z38s5gqfvsvp4
-
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo'
 
-mapping query:
+v1_1 deployed:
+txid: 
+at148r6xq7dadmw3a0e0afnwl303xphy4qeuhhge54283kx7tsxtgzqzcpk9a
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
+mapping query:
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
+
+v1:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/mapping/tokenId/true'
+
+v1_1:
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo/mapping/tokenId/true'
 ```
