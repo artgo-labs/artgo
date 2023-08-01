@@ -132,17 +132,27 @@ program artgo_aigc_v1_1.aleo{
             uri: nft.uri,
         };
 
-        return transferred then finalize(nft_id, hash, nft.uri);
+        return transferred then finalize(nft_id, hash, nft.uri, receiver);
     }
 
     finalize transfer_private_nft (
         nft_id: field,
         hash: field,
         uri: Field2,
+        receiver: address,
     ) {
         let nft: NftInfo = Mapping::get(nfts, nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
+
+        //change holder info
+        let info: NftInfo = NftInfo {
+            holder: receiver,
+            minter: nft.minter,
+            hash: nft.hash,
+            uri: nft.uri,
+        };
+        Mapping::set(nfts, nft_id, info);
     }
 
     transition place_order (
@@ -457,6 +467,15 @@ program artgo_aigc_v1_1.aleo{
         let bid: Bid = Mapping::get(bids, nft_id);
         assert_eq(bid.bidder, winner);
         assert(bid.amount == winner_amount);
+
+        //change holder info
+        let info: NftInfo = NftInfo {
+            holder: winner,
+            minter: nft.minter,
+            hash: nft.hash,
+            uri: nft.uri,
+        };
+        Mapping::set(nfts, nft_id, info);
 
         //clear mappings
         Mapping::remove(bids, nft_id);
