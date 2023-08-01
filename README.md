@@ -32,7 +32,7 @@ struct Order {
     minter: address, // minter address
     nft_id: field,     // nft id
     order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
-    amount: u128,    // minumum amount
+    amount: u64,    // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
     deadline: field  // the timestamp to finish order -- blocknumber or timestamp
 }
@@ -42,7 +42,7 @@ struct Order {
 struct Bid {
     bidder: address,    // bidder address
     nft_id: field,        // id
-    amount: u128,       // bidding amount
+    amount: u64,       // bidding amount
 }
 ```
 
@@ -256,6 +256,12 @@ TBD
 
 inputs:
 
+- `credit` : Record  
+   Aleo Credit record
+
+- `fee` : u64  
+   cancel fee
+
 - `nft_id` : field  
    nft id
 
@@ -318,6 +324,9 @@ inputs:
 
 - `nft` : `NFT` record  
    nft record
+
+- `fee` : u64  
+   trading fee
 
 - `winner` : address  
    winner address
