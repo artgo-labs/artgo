@@ -309,7 +309,7 @@ program artgo_aigc_v1_1.aleo{
         };
         let hash: field = BHP256::hash_to_field(digest);
 
-        return nft_transfer then finalize(nft_id, hash, nft.uri, receiver);
+        return nft_transfer then finalize(nft_id, hash, nft.uri, receiver, self.caller);
     }
 
     finalize handle_cancel_order (
@@ -317,7 +317,13 @@ program artgo_aigc_v1_1.aleo{
         hash: field,
         uri: Field2,
         receiver: address,
+        admin_in: address,
     ) {
+        //verify admin
+        assert(Mapping::contains(admin, true));
+        let real_admin: address = Mapping::get(admin, true);
+        assert_eq(real_admin, admin_in);
+
         //verify nft
         let nft: NftInfo = Mapping::get(nfts, nft_id);
         assert_eq(nft.hash, hash);
@@ -399,7 +405,7 @@ program artgo_aigc_v1_1.aleo{
     ) -> (Nft){
         //charge fee
         assert(fee == 4000000u64);
-        assert(winner_amount as u64 >= 4000000u64 && winner_amount <= 18446744073709551615field);
+        assert(winner_amount as u64 >= fee && winner_amount <= 18446744073709551615field);
         assert_eq(self.caller, admin_in);
 
         credits.leo/transfer_public(admin_in, fee); 
@@ -480,4 +486,5 @@ program artgo_aigc_v1_1.aleo{
     }
 
     //Todo:: change fee setting
+    //Todo:: fee algorithm
 }
