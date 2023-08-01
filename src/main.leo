@@ -194,8 +194,8 @@ program artgo_aigc_v1_1.aleo{
     ) {
         //Get admin
         assert(Mapping::contains(admin, true));
-        let admin_inuse: address = Mapping::get(admin, true);
-        assert_eq(admin_inuse, admin_in);
+        let real_admin: address = Mapping::get(admin, true);
+        assert_eq(real_admin, admin_in);
 
         let nft: NftInfo = Mapping::get(nfts, nft_id);
         assert_eq(nft.hash, hash);
@@ -272,8 +272,8 @@ program artgo_aigc_v1_1.aleo{
         assert(owner == order.holder);
 
         assert(Mapping::contains(admin, true));
-        let admin_inuse: address = Mapping::get(admin, true);
-        assert_eq(admin_inuse, admin_in);
+        let real_admin: address = Mapping::get(admin, true);
+        assert_eq(real_admin, admin_in);
 
         let order_update : Order = Order {
             holder: order.holder,
@@ -359,8 +359,8 @@ program artgo_aigc_v1_1.aleo{
     ) {
         //verify admin
         assert(Mapping::contains(admin, true));
-        let admin_inuse: address = Mapping::get(admin, true);
-        assert_eq(admin_inuse, admin_in);
+        let real_admin: address = Mapping::get(admin, true);
+        assert_eq(real_admin, admin_in);
 
         //add bid
         let bid : Bid = Bid {
@@ -433,8 +433,8 @@ program artgo_aigc_v1_1.aleo{
     ) {
         //verify admin
         assert(Mapping::contains(admin, true));
-        let admin_inuse: address = Mapping::get(admin, true);
-        assert_eq(admin_inuse, admin_in);
+        let real_admin: address = Mapping::get(admin, true);
+        assert_eq(real_admin, admin_in);
 
         //verify order
         assert(Mapping::contains(orders, nft_id));
@@ -464,8 +464,8 @@ program artgo_aigc_v1_1.aleo{
     }
 
     finalize set_admin(public caller: address, admin_new: address) {
-       let admin_inuse: address = Mapping::get_or_use(admin, true, aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
-        assert_eq(admin_inuse, caller);
+       let real_admin: address = Mapping::get_or_use(admin, true, aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
+        assert_eq(real_admin, caller);
         Mapping::set(admin, true, admin_new);
     }
 
@@ -474,8 +474,8 @@ program artgo_aigc_v1_1.aleo{
     }
 
     finalize change_admin (caller: address, admin_new: address) {
-        let admin_inuse: address = Mapping::get(admin, true);
-        assert_eq(caller, admin_inuse);
+        let real_admin: address = Mapping::get(admin, true);
+        assert_eq(caller, real_admin);
         Mapping::set(admin, true, admin_new);
     }
 
