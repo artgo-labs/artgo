@@ -341,7 +341,7 @@ program artgo_aigc_v1_1.aleo{
 
         //vefiry order
         let order: Order = Mapping::get(orders, nft_id);
-        assert(order.status == 1u8);
+        assert(order.status == 2u8);
         assert(receiver == order.holder);
 
         //clear mappings
