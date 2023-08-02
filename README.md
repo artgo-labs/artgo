@@ -41,7 +41,7 @@ struct Order {
     minter: address, // minter address
     nft_id: field,     // nft id
     order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
-    amount: u128,    // minumum amount
+    amount: u64,    // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
     deadline: field  // the timestamp to finish order -- blocknumber or timestamp
 }
@@ -51,7 +51,7 @@ struct Order {
 struct Bid {
     bidder: address,    // bidder address
     nft_id: field,        // id
-    amount: u128,       // bidding amount
+    amount: u64,       // bidding amount
 }
 ```
 
@@ -265,6 +265,12 @@ TBD
 
 inputs:
 
+- `credit` : Record  
+   Aleo Credit record
+
+- `fee` : u64  
+   cancel fee
+
 - `nft_id` : field  
    nft id
 
@@ -328,6 +334,9 @@ inputs:
 - `nft` : `NFT` record  
    nft record
 
+- `fee` : u64  
+   trading fee
+
 - `winner` : address  
    winner address
 
@@ -387,6 +396,11 @@ txid:
 at148r6xq7dadmw3a0e0afnwl303xphy4qeuhhge54283kx7tsxtgzqzcpk9a
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
+v1_2 deployed:
+txid:
+at1aencztkgs0rrw7z3p4nzkcxxgxrnnfqpwv43mf34n5f02j20vqgsqh77m7
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_2.aleo'
+
 mapping query:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
@@ -395,4 +409,7 @@ curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/m
 
 v1_1:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo/mapping/tokenId/true'
+
+v1_2:
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_2.aleo/mapping/tokenId/true'
 ```
