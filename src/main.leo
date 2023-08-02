@@ -1,7 +1,7 @@
 import credits.leo;
 
 // The 'artgo_aigc_v1.aleo' program.
-program artgo_aigc_v1_1.aleo{
+program artgo_aigc_v1_2.aleo{
 
     struct Field2 {
         first: field,   
