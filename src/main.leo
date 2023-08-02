@@ -408,6 +408,7 @@ program artgo_aigc_v1_2.aleo{
     transition finish_order (
         public nft_id: field,
         private nft: Nft,
+        public holder: address,
         public fee: u64,
         public winner: address,
         public winner_amount: field,
@@ -418,8 +419,8 @@ program artgo_aigc_v1_2.aleo{
         assert(winner_amount as u64 >= fee && winner_amount <= 18446744073709551615field);
         assert_eq(self.caller, admin_in);
 
-        credits.leo/transfer_public(admin_in, fee); 
-        credits.leo/transfer_public(winner, winner_amount as u64 - fee);
+        //transfer remaining amount
+        credits.leo/transfer_public(holder, winner_amount as u64 - fee);
 
         let digest: NftHash = NftHash {
             minter: nft.minter,
@@ -436,11 +437,12 @@ program artgo_aigc_v1_2.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(nft_id, hash, nft.uri, winner, winner_amount as u64, admin_in);
+        return nft_transfer then finalize(nft_id, holder, hash, nft.uri, winner, winner_amount as u64, admin_in);
     }
 
     finalize finish_order (
         nft_id: field,
+        holder: address,
         hash: field,
         uri: Field2,
         winner: address,
@@ -461,6 +463,7 @@ program artgo_aigc_v1_2.aleo{
         let nft: NftInfo = Mapping::get(nfts, nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
+        assert_eq(nft.holder, holder);
 
         //verify bid
         assert(Mapping::contains(bids, nft_id));
