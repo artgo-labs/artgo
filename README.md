@@ -387,6 +387,11 @@ txid:
 at148r6xq7dadmw3a0e0afnwl303xphy4qeuhhge54283kx7tsxtgzqzcpk9a
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
+v1_2 deployed:
+txid:
+at1aencztkgs0rrw7z3p4nzkcxxgxrnnfqpwv43mf34n5f02j20vqgsqh77m7
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_2.aleo'
+
 mapping query:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
@@ -395,4 +400,7 @@ curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/m
 
 v1_1:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo/mapping/tokenId/true'
+
+v1_2:
+curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_2.aleo/mapping/tokenId/true'
 ```
