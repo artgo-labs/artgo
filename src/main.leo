@@ -234,7 +234,7 @@ program artgo_aigc_v1_2.aleo{
         assert(order.status == 1u8);
         assert(owner == order.holder);
 
-        assert(order.amount >= 4000000u64);  //check greater than fee
+        assert(amount_new >= 4000000u64);  //check greater than fee
         let order_update : Order = Order {
             holder: order.holder,
             nft_id: order.nft_id,
