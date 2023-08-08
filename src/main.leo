@@ -1,7 +1,7 @@
 import credits.leo;
 
 // The 'artgo_aigc_v1.aleo' program.
-program artgo_aigc_v1_2.aleo{
+program artgo_aigc_v1_3.aleo{
 
     struct Field2 {
         first: field,   
@@ -41,7 +41,7 @@ program artgo_aigc_v1_2.aleo{
         owner: address,     
         bidder: address,
         nft_id: field,
-        amount: field,
+        amount: u64,
     }
 
     record Nft {
@@ -159,13 +159,13 @@ program artgo_aigc_v1_2.aleo{
         public nft_id: field,
         private nft: Nft, 
         public order_type: u8, 
-        public amount: field, 
+        public amount: u64, 
         public deadline: field, 
         public admin_in: address
     ) -> Nft {
         //Only support buy / sell atm
         assert(order_type == 1u8);    
-        assert(amount > 0field && amount <= 18446744073709551615field);
+        assert(amount > 0u64 && amount <= 18446744073709551615u64);
 
         let digest: NftHash = NftHash {
             minter: nft.minter,
@@ -177,7 +177,7 @@ program artgo_aigc_v1_2.aleo{
         let order : Order = Order {
             holder: self.caller,
             nft_id: nft_id,
-            amount: amount as u64,
+            amount: amount,
             order_type: order_type,
             status: 1u8,
             deadline: 0field,
@@ -219,26 +219,26 @@ program artgo_aigc_v1_2.aleo{
 
     transition update_order (
         public nft_id: field,
-        public new_amount: field,
+        public new_amount: u64,
     ) {
-        assert(new_amount > 0field && new_amount <= 18446744073709551615field);
+        assert(new_amount > 0u64 && new_amount <= 18446744073709551615u64);
         return then finalize(self.caller, nft_id, new_amount);
     }
 
     finalize update_order (
         owner: address,
         nft_id: field,
-        amount_new: field,
+        amount_new: u64,
     ) {
         let order: Order = Mapping::get(orders, nft_id);
         assert(order.status == 1u8);
         assert(owner == order.holder);
 
-        assert(order.amount >= 4000000u64);  //check greater than fee
+        assert(amount_new >= 4000000u64);  //check greater than fee
         let order_update : Order = Order {
             holder: order.holder,
             nft_id: order.nft_id,
-            amount: amount_new as u64,
+            amount: amount_new,
             order_type: order.order_type,
             status: order.status,
             deadline: order.deadline,
@@ -261,7 +261,7 @@ program artgo_aigc_v1_2.aleo{
             bid_type: 2u8,
             bidder: self.caller,
             nft_id: nft_id,
-            amount: 0field,
+            amount: 0u64,
         };
         let change:credits = credits.leo/transfer_private_to_public(credit, admin_in, fee);
         return (change, bid_record) then finalize(self.caller, nft_id, fee, admin_in);
@@ -352,10 +352,10 @@ program artgo_aigc_v1_2.aleo{
     transition bid_order (
         private credit: credits.leo/credits, 
         public nft_id: field, 
-        public amount: field,
+        public amount: u64,
         public admin_in: address,
     ) -> (BidRecord, credits.leo/credits) {
-        assert(amount > 0field && amount <= 18446744073709551615field);
+        assert(amount > 0u64 && amount <= 18446744073709551615u64);
         let bid_record: BidRecord = BidRecord {
             owner: admin_in,
             bid_type: 1u8,
@@ -363,8 +363,8 @@ program artgo_aigc_v1_2.aleo{
             nft_id: nft_id,
             amount: amount,
         };
-        let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount as u64);
-        return (bid_record, change) then finalize(self.caller, nft_id, amount as u64 , admin_in);
+        let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount);
+        return (bid_record, change) then finalize(self.caller, nft_id, amount, admin_in);
     }
 
     finalize bid_order (
@@ -390,7 +390,7 @@ program artgo_aigc_v1_2.aleo{
         assert(Mapping::contains(orders, nft_id));
         let order: Order = Mapping::get(orders, nft_id);
         assert(order.status == 1u8);
-        assert(amount as u64 >= order.amount);
+        assert(amount >= order.amount);
 
         //update order
         let order_update : Order = Order {
@@ -408,18 +408,19 @@ program artgo_aigc_v1_2.aleo{
     transition finish_order (
         public nft_id: field,
         private nft: Nft,
+        public holder: address,
         public fee: u64,
         public winner: address,
-        public winner_amount: field,
+        public winner_amount: u64,
         public admin_in: address,
     ) -> (Nft){
         //charge fee
         assert(fee == 4000000u64);
-        assert(winner_amount as u64 >= fee && winner_amount <= 18446744073709551615field);
+        assert(winner_amount >= fee && winner_amount <= 18446744073709551615u64);
         assert_eq(self.caller, admin_in);
 
-        credits.leo/transfer_public(admin_in, fee); 
-        credits.leo/transfer_public(winner, winner_amount as u64 - fee);
+        //transfer remaining amount
+        credits.leo/transfer_public(holder, winner_amount - fee);
 
         let digest: NftHash = NftHash {
             minter: nft.minter,
@@ -436,11 +437,12 @@ program artgo_aigc_v1_2.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(nft_id, hash, nft.uri, winner, winner_amount as u64, admin_in);
+        return nft_transfer then finalize(nft_id, holder, hash, nft.uri, winner, winner_amount, admin_in);
     }
 
     finalize finish_order (
         nft_id: field,
+        holder: address,
         hash: field,
         uri: Field2,
         winner: address,
@@ -461,6 +463,7 @@ program artgo_aigc_v1_2.aleo{
         let nft: NftInfo = Mapping::get(nfts, nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
+        assert_eq(nft.holder, holder);
 
         //verify bid
         assert(Mapping::contains(bids, nft_id));
