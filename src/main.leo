@@ -58,6 +58,8 @@ program artgo_aigc_v1_3.aleo{
     mapping tokenId: bool => field;
     //true --> admin
     mapping admin: bool => address;
+    //true --> fee
+    mapping fees: bool => u64;
     //nft id --> Order
     mapping orders: field => Order;
     //nft id --> bid
@@ -212,7 +214,10 @@ program artgo_aigc_v1_3.aleo{
         assert_eq(nft.uri, uri);
         
         //update order information
-        assert(order.amount >= 4000000u64);  //check greater than fee
+        assert(Mapping::contains(fees, true));
+        let real_fee: u64 = Mapping::get(fees, true);
+        assert(order.amount >= real_fee);  //check greater than fee
+
         assert(!Mapping::contains(orders, nft_id));
         Mapping::set(orders, nft_id, order);
     }
@@ -234,7 +239,10 @@ program artgo_aigc_v1_3.aleo{
         assert(order.status == 1u8);
         assert(owner == order.holder);
 
-        assert(amount_new >= 4000000u64);  //check greater than fee
+        assert(Mapping::contains(fees, true));
+        let real_fee: u64 = Mapping::get(fees, true);
+        assert(amount_new >= real_fee);  //check greater than fee
+
         let order_update : Order = Order {
             holder: order.holder,
             nft_id: order.nft_id,
@@ -275,7 +283,9 @@ program artgo_aigc_v1_3.aleo{
         admin_in: address,
     ) {
         //charge 4 credits first, will change to settings later
-        assert(fee == 4000000u64);
+        assert(Mapping::contains(fees, true));
+        let real_fee: u64 = Mapping::get(fees, true);
+        assert_eq(real_fee, fee);
 
         let order: Order = Mapping::get(orders, nft_id);
         assert(order.status == 1u8);
@@ -415,7 +425,6 @@ program artgo_aigc_v1_3.aleo{
         public admin_in: address,
     ) -> (Nft){
         //charge fee
-        assert(fee == 4000000u64);
         assert(winner_amount >= fee && winner_amount <= 18446744073709551615u64);
         assert_eq(self.caller, admin_in);
 
@@ -437,7 +446,7 @@ program artgo_aigc_v1_3.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(nft_id, holder, hash, nft.uri, winner, winner_amount, admin_in);
+        return nft_transfer then finalize(nft_id, holder, hash, nft.uri, winner, winner_amount, fee, admin_in);
     }
 
     finalize finish_order (
@@ -447,12 +456,17 @@ program artgo_aigc_v1_3.aleo{
         uri: Field2,
         winner: address,
         winner_amount: u64,
+        fee: u64,
         admin_in: address
     ) {
         //verify admin
         assert(Mapping::contains(admin, true));
         let real_admin: address = Mapping::get(admin, true);
         assert_eq(real_admin, admin_in);
+
+        assert(Mapping::contains(fees, true));
+        let real_fee: u64 = Mapping::get(fees, true);
+        assert_eq(real_fee, fee);
 
         //verify order
         assert(Mapping::contains(orders, nft_id));
@@ -497,16 +511,15 @@ program artgo_aigc_v1_3.aleo{
         Mapping::set(admin, true, admin_new);
     }
 
-    transition change_admin (admin_new: address) {
-        return then finalize(self.caller, admin_new);
+    transition set_fee(fee: u64) {
+        return then finalize(self.caller, fee);
     }
 
-    finalize change_admin (caller: address, admin_new: address) {
+    finalize set_fee(public caller: address, fee: u64) {
         let real_admin: address = Mapping::get(admin, true);
         assert_eq(caller, real_admin);
-        Mapping::set(admin, true, admin_new);
+
+        Mapping::set(fees, true, fee);
     }
 
-    //Todo:: change fee setting
-    //Todo:: fee algorithm
 }
