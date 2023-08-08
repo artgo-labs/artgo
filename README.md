@@ -393,7 +393,6 @@ at1aencztkgs0rrw7z3p4nzkcxxgxrnnfqpwv43mf34n5f02j20vqgsqh77m7
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_2.aleo'
 
 mapping query:
-curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
 
 v1:
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo/mapping/tokenId/true'
