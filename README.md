@@ -48,7 +48,7 @@ struct Bid {
 
 ```js
 record BidRecord {
-    bid_type: u8,        // 1-bid, 2-cancel
+    bid_type: u8,        // 1-bid, 2-offer, 0-cancel
     owner: address,     
     bidder: address,
     nft_id: field,
@@ -205,7 +205,8 @@ inputs:
 - `order_type` order type  
       0 - non-trading
       1 - normal
-      2 - auction
+      2 - offer
+      3 - auction
 
 - `amount` field  
   Minimum amount for auction
@@ -346,6 +347,22 @@ usage:
 ```shell
 TBD
 ```
+
+## Make offer
+
+Order type: 1:normal 2:offer
+
+bid_offer
+bid: 1: bid 2: offer 0: cancel
+
+offers:
+   bidder addr + nft_id --> offer
+
+bid_offer
+cancel_offer
+update_offer
+trade_offer
+finish_offer
 
 ## Workflow (TBD)
 
