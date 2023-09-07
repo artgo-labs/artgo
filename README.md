@@ -31,7 +31,7 @@ struct Order {
     holder: address, // owner address
     minter: address, // minter address
     nft_id: field,     // nft id
-    order_type: u8,  // order type, 0:non-trading 1:normal 2:auction（Todo）
+    order_type: u8,  // order type, 0:non-trading 1:buy now 2:make offer 3:auction（Todo）
     amount: u64,    // minumum amount
     status: u8,      // order status, 0:non-trading 1:trading 2:canceled 3:finished
     deadline: field  // the timestamp to finish order -- blocknumber or timestamp
@@ -43,6 +43,13 @@ struct Bid {
     bidder: address,    // bidder address
     nft_id: field,        // id
     amount: u64,       // bidding amount
+}
+```
+
+```js
+struct OfferId {
+    bidder: address,    // bidder address
+    nft_id: field,      // id
 }
 ```
 
@@ -101,6 +108,13 @@ mapping
 Store all the bids.
 `bids` store: `field => Bid`;  
 key: `nft id`
+
+### offers
+
+mapping
+Store all the offers.
+`offers` store: `OfferId => Bid`;  
+key: `offer id: bidder addr + nft_id`  
 
 ## Interfaces
 
@@ -348,17 +362,41 @@ usage:
 TBD
 ```
 
-## Make offer
+- Make offer
 
-Order type: 1:normal 2:offer
+### bid_offer
 
-bid_offer
-bid: 1: bid 2: offer 0: cancel
+`bid_offer` to make an offer for NFT.
 
-offers:
-   bidder addr + nft_id --> offer
+- make an offer for nft, permisionless.
 
-bid_offer
+inputs:
+
+- `credit` : Record  
+   Aleo Credit record
+
+- `nft_id` : field  
+   nft hash
+  
+- `amount` : field  
+  offer amount
+
+- `admin_in` address  
+  admin address
+
+outputs:
+
+- `BidRecord` record
+- `credit` record
+
+- success --`BidRecord` record to admin. Otherwise, tx will fail.
+
+usage:
+
+```shell
+TBD
+```
+
 cancel_offer
 update_offer
 trade_offer

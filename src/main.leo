@@ -30,6 +30,11 @@ program artgo_aigc_v1_3.aleo{
         deadline: field,
     }
 
+    struct OfferId {
+        addr: address,
+        nft_id: field,
+    }
+
     struct Bid {
         bidder: address,    // bidder address
         nft_id: field,
@@ -64,6 +69,10 @@ program artgo_aigc_v1_3.aleo{
     mapping orders: field => Order;
     //nft id --> bid
     mapping bids: field => Bid;
+    
+    //offer id -> bid
+    mapping offers: OfferId => Bid;
+
 
     // mint aigc nft
     transition mint_nft (
