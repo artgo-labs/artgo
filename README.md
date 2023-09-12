@@ -362,7 +362,7 @@ usage:
 TBD
 ```
 
-- Make offer
+## Make offer
 
 ### bid_offer
 
