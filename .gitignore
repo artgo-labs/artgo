@@ -1,3 +1,4 @@
 outputs/
-build/
+build/program.json
+build/imports
 .vscode/
