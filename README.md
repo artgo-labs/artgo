@@ -256,9 +256,6 @@ TBD
 
 inputs:
 
-- `credit` : Record  
-   Aleo Credit record
-
 - `fee` : u64  
    cancel fee
 
@@ -285,9 +282,6 @@ TBD
 - bid order, permisionless.
 
 inputs:
-
-- `credit` : Record  
-   Aleo Credit record
 
 - `nft_id` : field  
    nft hash
@@ -378,23 +372,9 @@ artgo_aigc_v1.aleo
 
 aigc program testnet3 deployed:
 
-v1 deployed:
-txid: at1gz5azfpd0xegxxnan9j9yy0fujghvtrfdqkad0gplwf95z38s5gqfvsvp4
-curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1.aleo'
-
-v1_1 deployed:
-txid: 
-at148r6xq7dadmw3a0e0afnwl303xphy4qeuhhge54283kx7tsxtgzqzcpk9a
-curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_1.aleo'
-
-v1_2 deployed:
-txid:
-at1aencztkgs0rrw7z3p4nzkcxxgxrnnfqpwv43mf34n5f02j20vqgsqh77m7
-curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_2.aleo'
-
 v1_3 deployed:
 txid:
-at10538rm2ncpazklrkqgz29fq9dwc73f9wt5hpg9r3csfjqkzc4gzs7wrtr5
+at1j6l7je4lnxk5alh02h5ar6l5gv6aagfzy8xscnm48whtqwtrjsrqchx480
 curl --location 'http://testnet3.artgo.app/testnet3/program/artgo_aigc_v1_3.aleo'
 
 mapping query:

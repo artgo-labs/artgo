@@ -10,6 +10,10 @@ program credits.aleo {
     // The `transfer_public` function sends the specified amount
     // from the sender's `account` to the receiver's `account`.
     transition transfer_public(public to: address, public amount: u64) {
+        return then finalize(to, amount);
+    }
+
+    finalize transfer_public(to: address, amount: u64){
         return;
     }
 
