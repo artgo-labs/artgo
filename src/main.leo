@@ -1,7 +1,7 @@
 import credits.leo;
 
 // The 'artgo_aigc_v1.aleo' program.
-program artgo_aigc_v1_3.aleo{
+program artgo_aigc_v1_4.aleo{
 
     struct Field2 {
         first: field,   
@@ -256,11 +256,13 @@ program artgo_aigc_v1_3.aleo{
     }
 
     transition cancel_order (
+        private credit: credits.leo/credits,
         public fee: u64,
         public nft_id: field,
         public admin_in: address,
-    ) -> (BidRecord) {
+    ) -> (credits.leo/credits, BidRecord) {
         //charge fee
+        assert(fee <= credit.microcredits);
 
         let bid_record: BidRecord = BidRecord {
             owner: admin_in,
@@ -269,9 +271,9 @@ program artgo_aigc_v1_3.aleo{
             nft_id: nft_id,
             amount: 0u64,
         };
-        credits.leo/transfer_public(admin_in, fee);
-        return (bid_record) then finalize(self.caller, nft_id, fee, admin_in);
-        
+        credits.leo/transfer_private_to_public(credit, admin_in, fee);
+        return (credit, bid_record) then finalize(self.caller, nft_id, fee, admin_in);
+
     }
 
     finalize cancel_order (
@@ -358,10 +360,11 @@ program artgo_aigc_v1_3.aleo{
     }
 
     transition bid_order (
+        private credit: credits.leo/credits, 
         public nft_id: field, 
         public amount: u64,
         public admin_in: address,
-    ) -> (BidRecord) {
+    ) -> (BidRecord, credits.leo/credits) {
         assert(amount > 0u64 && amount <= 18446744073709551615u64);
         let bid_record: BidRecord = BidRecord {
             owner: admin_in,
@@ -370,8 +373,8 @@ program artgo_aigc_v1_3.aleo{
             nft_id: nft_id,
             amount: amount,
         };
-        credits.leo/transfer_public(admin_in, amount);
-        return (bid_record) then finalize(self.caller, nft_id, amount, admin_in);
+        credits.leo/transfer_private_to_public(credit, admin_in, amount);
+        return (bid_record, credit) then finalize(self.caller, nft_id, amount, admin_in);
     }
 
     finalize bid_order (

@@ -1,5 +1,5 @@
 import credits.aleo;
-program artgo_aigc_v1_3.aleo;
+program artgo_aigc_v1_4.aleo;
 
 
 struct Field2:
@@ -83,7 +83,7 @@ function mint_nft:
     cast self.caller self.caller r0 r2 r1 into r5 as Nft.record;
     async mint_nft self.caller r4 r1 into r6;
     output r5 as Nft.record;
-    output r6 as artgo_aigc_v1_3.aleo/mint_nft.future;
+    output r6 as artgo_aigc_v1_4.aleo/mint_nft.future;
 
 finalize mint_nft:
     input r0 as address.public;
@@ -107,7 +107,7 @@ function transfer_private_nft:
     cast r2 r1.minter r1.prompt r1.nonce r1.uri into r6 as Nft.record;
     async transfer_private_nft r0 r5 r1.uri r2 into r7;
     output r6 as Nft.record;
-    output r7 as artgo_aigc_v1_3.aleo/transfer_private_nft.future;
+    output r7 as artgo_aigc_v1_4.aleo/transfer_private_nft.future;
 
 finalize transfer_private_nft:
     input r0 as field.public;
@@ -140,7 +140,7 @@ function place_order:
     cast r5 r1.minter r1.prompt r1.nonce r1.uri into r13 as Nft.record;
     async place_order r5 r0 r11 r1.uri r12 into r14;
     output r13 as Nft.record;
-    output r14 as artgo_aigc_v1_3.aleo/place_order.future;
+    output r14 as artgo_aigc_v1_4.aleo/place_order.future;
 
 finalize place_order:
     input r0 as address.public;
@@ -174,7 +174,7 @@ function update_order:
     and r2 r3 into r4;
     assert.eq r4 true;
     async update_order self.caller r0 r1 into r5;
-    output r5 as artgo_aigc_v1_3.aleo/update_order.future;
+    output r5 as artgo_aigc_v1_4.aleo/update_order.future;
 
 finalize update_order:
     input r0 as address.public;
@@ -195,17 +195,21 @@ finalize update_order:
 
 
 function cancel_order:
-    input r0 as u64.public;
-    input r1 as field.public;
-    input r2 as address.public;
-    cast r2 2u8 self.caller r1 0u64 into r3 as BidRecord.record;
-    call credits.aleo/transfer_public r2 r0 into r4;
-    async cancel_order r4 self.caller r1 r0 r2 into r5;
-    output r3 as BidRecord.record;
-    output r5 as artgo_aigc_v1_3.aleo/cancel_order.future;
+    input r0 as credits.aleo/credits.record;
+    input r1 as u64.public;
+    input r2 as field.public;
+    input r3 as address.public;
+    lte r1 r0.microcredits into r4;
+    assert.eq r4 true;
+    cast r3 2u8 self.caller r2 0u64 into r5 as BidRecord.record;
+    call credits.aleo/transfer_private_to_public r0 r3 r1 into r6 r7;
+    async cancel_order r7 self.caller r2 r1 r3 into r8;
+    output r6 as credits.aleo/credits.record;
+    output r5 as BidRecord.record;
+    output r8 as artgo_aigc_v1_4.aleo/cancel_order.future;
 
 finalize cancel_order:
-    input r0 as credits.aleo/transfer_public.future;
+    input r0 as credits.aleo/transfer_private_to_public.future;
     input r1 as address.public;
     input r2 as field.public;
     input r3 as u64.public;
@@ -237,7 +241,7 @@ function handle_cancel_order:
     hash.bhp256 r4 into r5 as field;
     async handle_cancel_order r0 r5 r1.uri r2 self.caller into r6;
     output r3 as Nft.record;
-    output r6 as artgo_aigc_v1_3.aleo/handle_cancel_order.future;
+    output r6 as artgo_aigc_v1_4.aleo/handle_cancel_order.future;
 
 finalize handle_cancel_order:
     input r0 as field.public;
@@ -262,21 +266,23 @@ finalize handle_cancel_order:
 
 
 function bid_order:
-    input r0 as field.public;
-    input r1 as u64.public;
-    input r2 as address.public;
-    gt r1 0u64 into r3;
-    lte r1 18446744073709551615u64 into r4;
-    and r3 r4 into r5;
-    assert.eq r5 true;
-    cast r2 1u8 self.caller r0 r1 into r6 as BidRecord.record;
-    call credits.aleo/transfer_public r2 r1 into r7;
-    async bid_order r7 self.caller r0 r1 r2 into r8;
-    output r6 as BidRecord.record;
-    output r8 as artgo_aigc_v1_3.aleo/bid_order.future;
+    input r0 as credits.aleo/credits.record;
+    input r1 as field.public;
+    input r2 as u64.public;
+    input r3 as address.public;
+    gt r2 0u64 into r4;
+    lte r2 18446744073709551615u64 into r5;
+    and r4 r5 into r6;
+    assert.eq r6 true;
+    cast r3 1u8 self.caller r1 r2 into r7 as BidRecord.record;
+    call credits.aleo/transfer_private_to_public r0 r3 r2 into r8 r9;
+    async bid_order r9 self.caller r1 r2 r3 into r10;
+    output r7 as BidRecord.record;
+    output r8 as credits.aleo/credits.record;
+    output r10 as artgo_aigc_v1_4.aleo/bid_order.future;
 
 finalize bid_order:
-    input r0 as credits.aleo/transfer_public.future;
+    input r0 as credits.aleo/transfer_private_to_public.future;
     input r1 as address.public;
     input r2 as field.public;
     input r3 as u64.public;
@@ -319,7 +325,7 @@ function finish_order:
     cast r4 r1.minter r1.prompt r1.nonce r1.uri into r14 as Nft.record;
     async finish_order r11 r0 r2 r13 r1.uri r4 r5 r3 r6 into r15;
     output r14 as Nft.record;
-    output r15 as artgo_aigc_v1_3.aleo/finish_order.future;
+    output r15 as artgo_aigc_v1_4.aleo/finish_order.future;
 
 finalize finish_order:
     input r0 as credits.aleo/transfer_public.future;
@@ -363,7 +369,7 @@ finalize finish_order:
 function set_admin:
     input r0 as address.private;
     async set_admin self.caller r0 into r1;
-    output r1 as artgo_aigc_v1_3.aleo/set_admin.future;
+    output r1 as artgo_aigc_v1_4.aleo/set_admin.future;
 
 finalize set_admin:
     input r0 as address.public;
@@ -376,7 +382,7 @@ finalize set_admin:
 function set_fee:
     input r0 as u64.private;
     async set_fee self.caller r0 into r1;
-    output r1 as artgo_aigc_v1_3.aleo/set_fee.future;
+    output r1 as artgo_aigc_v1_4.aleo/set_fee.future;
 
 finalize set_fee:
     input r0 as address.public;
