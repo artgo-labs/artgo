@@ -83,7 +83,7 @@ program aigc_ver_0.aleo{
     //nft id --> Order
     mapping orders: u128 => Order;
     //nft id --> bid
-    mapping bids: field => Bid;
+    mapping bids: u128 => Bid;
     //true -> Setting
     mapping settings: bool => Setting;
 
@@ -146,7 +146,11 @@ program aigc_ver_0.aleo{
             uri: uri,
         };
 
-        return nft then finalize(self.caller, hash, uri);
+        return nft then finalize(
+            self.caller,
+            hash,
+            uri,
+        );
     }
 
     finalize mint_nft (
@@ -193,7 +197,12 @@ program aigc_ver_0.aleo{
             uri: nft.uri,
         };
 
-        return transferred then finalize(nft_id, hash, nft.uri, receiver);
+        return transferred then finalize(
+            nft_id,
+            hash,
+            nft.uri,
+            receiver,
+        );
     }
 
     finalize transfer_private_nft (
@@ -377,58 +386,62 @@ program aigc_ver_0.aleo{
             },
         );
     }
-//
-//     //handle cancel order, delete states
-//     transition handle_cancel_order (
-//         public nft_id: field,
-//         private nft: Nft,
-//         public receiver: address,
-//     ) -> Nft {
-//
-//         let nft_transfer : Nft = Nft {
-//             owner: receiver,
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//             uri: nft.uri,
-//         };
-//
-//         let digest: NftHash = NftHash {
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//         };
-//         let hash: field = BHP256::hash_to_field(digest);
-//
-//         return nft_transfer then finalize(nft_id, hash, nft.uri, receiver, self.caller);
-//     }
-//
-//     finalize handle_cancel_order (
-//         nft_id: field,
-//         hash: field,
-//         uri: Field2,
-//         receiver: address,
-//         admin_in: address,
-//     ) {
-//         //verify admin
-//         assert(Mapping::contains(admin, true));
-//         let real_admin: address = Mapping::get(admin, true);
-//         assert_eq(real_admin, admin_in);
-//
-//         //verify nft
-//         let nft: NftInfo = Mapping::get(nfts, nft_id);
-//         assert_eq(nft.hash, hash);
-//         assert_eq(nft.uri, uri);
-//
-//         //vefiry order
-//         let order: Order = Mapping::get(orders, nft_id);
-//         assert(order.status == 2u8);
-//         assert(receiver == order.holder);
-//
-//         //clear mappings
-//         Mapping::remove(bids, nft_id);
-//         Mapping::remove(orders, nft_id);
-//     }
+
+    // handle cancel order, delete states
+    transition handle_cancel_order (
+        public nft_id: u128,
+        private nft: Nft,
+        public receiver: address,
+    ) -> Nft {
+        let nft_transfer : Nft = Nft {
+            owner: receiver,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
+
+        return nft_transfer then finalize(
+            nft_id,
+            hash,
+            nft.uri,
+            receiver,
+            self.caller,
+        );
+    }
+
+    finalize handle_cancel_order (
+        nft_id: u128,
+        hash: field,
+        uri: Field2,
+        receiver: address,
+        admin_in: address,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(admin_in, setting.admin);
+
+        // verify nft
+        let nft: NftInfo = nfts.get(nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
+
+        // vefiry order
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_CANCELLED);
+        assert_eq(receiver, order.holder);
+
+        // clear mappings
+        bids.remove(nft_id);
+        orders.remove(nft_id);
+    }
 //
 //     transition bid_order (
 //         private credit: credits.leo/credits,
