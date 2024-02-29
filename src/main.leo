@@ -158,54 +158,50 @@ program aigc_ver_0.aleo{
         );
     }
 
-//     transition transfer_private_nft (
-//         nft_id: field,
-//         nft: Nft,
-//         receiver: address
-//     ) -> Nft {
-//         //verify owner
-//         assert(nft.owner == self.caller);
-//
-//         // Produce a Nft record for the specified receiver.
-//         // check validity
-//         let digest: NftHash = NftHash {
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//         };
-//
-//         let hash: field = BHP256::hash_to_field(digest);
-//
-//         let transferred: Nft = Nft {
-//             owner: receiver,
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//             uri: nft.uri,
-//         };
-//
-//         return transferred then finalize(nft_id, hash, nft.uri, receiver);
-//     }
-//
-//     finalize transfer_private_nft (
-//         nft_id: field,
-//         hash: field,
-//         uri: Field2,
-//         receiver: address,
-//     ) {
-//         let nft: NftInfo = Mapping::get(nfts, nft_id);
-//         assert_eq(nft.hash, hash);
-//         assert_eq(nft.uri, uri);
-//
-//         //change holder info
-//         let info: NftInfo = NftInfo {
-//             holder: receiver,
-//             minter: nft.minter,
-//             hash: nft.hash,
-//             uri: nft.uri,
-//         };
-//         Mapping::set(nfts, nft_id, info);
-//     }
+    transition transfer_private_nft (
+        nft_id: u128,
+        nft: Nft,
+        receiver: address
+    ) -> Nft {
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
+
+        let transferred: Nft = Nft {
+            owner: receiver,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        return transferred then finalize(nft_id, hash, nft.uri, receiver);
+    }
+
+    finalize transfer_private_nft (
+        nft_id: u128,
+        hash: field,
+        uri: Field2,
+        receiver: address,
+    ) {
+        let nft: NftInfo = nfts.get(nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
+
+        nfts.set(
+            nft_id,
+            NftInfo {
+                holder: receiver,
+                minter: nft.minter,
+                hash: nft.hash,
+                uri: nft.uri,
+            },
+        );
+    }
 //
 //     transition place_order (
 //         public nft_id: field,
