@@ -288,38 +288,41 @@ program aigc_ver_0.aleo{
         );
     }
 
-//     transition update_order (
-//         public nft_id: field,
-//         public new_amount: u64,
-//     ) {
-//         assert(new_amount > 0u64 && new_amount <= 18446744073709551615u64);
-//         return then finalize(self.caller, nft_id, new_amount);
-//     }
-//
-//     finalize update_order (
-//         owner: address,
-//         nft_id: field,
-//         amount_new: u64,
-//     ) {
-//         let order: Order = Mapping::get(orders, nft_id);
-//         assert(order.status == 1u8);
-//         assert(owner == order.holder);
-//
-//         assert(Mapping::contains(fees, true));
-//         let real_fee: u64 = Mapping::get(fees, true);
-//         assert(amount_new >= real_fee);  //check greater than fee
-//
-//         let order_update : Order = Order {
-//             holder: order.holder,
-//             nft_id: order.nft_id,
-//             amount: amount_new,
-//             order_type: order.order_type,
-//             status: order.status,
-//             deadline: order.deadline,
-//         };
-//
-//         Mapping::set(orders, nft_id, order_update);
-//     }
+    transition update_order (
+        public nft_id: u128,
+        public new_amount: u64,
+    ) {
+        return then finalize(
+            self.caller,
+            nft_id,
+            new_amount
+        );
+    }
+
+    finalize update_order (
+        owner: address,
+        nft_id: u128,
+        amount_new: u64,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert(amount_new >= setting.fee);
+
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
+        assert_eq(owner, order.holder);
+
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: amount_new,
+                order_type: order.order_type,
+                status: order.status,
+                deadline: order.deadline,
+            },
+        );
+    }
 //
 //     transition cancel_order (
 //         private credit: credits.leo/credits,
