@@ -8,6 +8,7 @@ program aigc_ver_0.aleo{
     // 3. lock amount into program
     // 4. add init function
     // 5. change deadline from field to u128
+    // 6. add global setting
 
     const THIS_ADDRESS: address = aleo1ax4yjycz4hezsd34urj6w5x8y4m7xhrh0f4few4xg05eylzapsrs3lax9n;
     const INITIALIZER: address = aleo1qdtufktf3xj78qdxh9s9jerelrmjukt7rn5l04nx8nhr7k8spcpsyf9eye;
@@ -109,49 +110,54 @@ program aigc_ver_0.aleo{
         );
     }
 
-//     // mint aigc nft
-//     transition mint_nft (
-//         private prompt: Field2,
-//         public uri: Field2,
-//         public nonce: field
-//     ) -> Nft {
-//
-//         let digest: NftHash = NftHash {
-//             minter: self.caller,
-//             prompt: prompt,
-//             nonce: nonce,
-//         };
-//
-//         let hash: field = BHP256::hash_to_field(digest);
-//
-//         let nft: Nft = Nft {
-//             owner: self.caller,
-//             minter: self.caller,
-//             prompt: prompt,
-//             nonce: nonce,
-//             uri: uri,
-//         };
-//
-//         return nft then finalize(self.caller, hash, uri);
-//     }
-//
-//     finalize mint_nft (
-//         holder: address,
-//         hash: field,
-//         uri: Field2,
-//     ) {
-//         let token_id: field = Mapping::get_or_use(tokenId, true, 1field);
-//         Mapping::set(tokenId, true, token_id + 1field);
-//
-//         let info: NftInfo = NftInfo{
-//             holder: holder,
-//             minter: holder,
-//             hash: hash,
-//             uri: uri,
-//         };
-//         Mapping::set(nfts, token_id, info);
-//     }
-//
+    // mint aigc nft
+    transition mint_nft (
+        private prompt: Field2,
+        public uri: Field2,
+        public nonce: field
+    ) -> Nft {
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: self.caller,
+                prompt: prompt,
+                nonce: nonce,
+            },
+        );
+
+        let nft: Nft = Nft {
+            owner: self.caller,
+            minter: self.caller,
+            prompt: prompt,
+            nonce: nonce,
+            uri: uri,
+        };
+
+        return nft then finalize(self.caller, hash, uri);
+    }
+
+    finalize mint_nft (
+        holder: address,
+        hash: field,
+        uri: Field2,
+    ) {
+        let nft_id: u128 = next_nft_id.get(true);
+
+        next_nft_id.set(
+            true,
+            nft_id + 1u128,
+        );
+
+        nfts.set(
+            nft_id,
+            NftInfo{
+                holder: holder,
+                minter: holder,
+                hash: hash,
+                uri: uri,
+            },
+        );
+    }
+
 //     transition transfer_private_nft (
 //         nft_id: field,
 //         nft: Nft,
