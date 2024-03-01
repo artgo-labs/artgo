@@ -6,15 +6,16 @@ program aigc_ver_0.aleo{
     // 0. limit program id into 10 bytes (gas saving)
     // 1. change nft id from field to u128
     // 2. mapping operators
-    // 3. lock amount into program in {bid_order}
+    // 3. lock credits amount(all bid amount + all fees) into program in {bid_order} && {cancel_order}
     // 4. add init function
     // 5. change deadline from field to u32
     // 6. add global setting
     // 7. remove bid amount overflow check
-    // 8. finalize parameters: {place_order},{finish_order}
+    // 8. finalize parameters: {place_order} && {finish_order}
     // 9. transition parameters: {finish_order}
     // 10. some constants
     // 11. add deadline check in {bid_order}
+    // 12. add {withdraw_fee}
 
     // discussion: lock nft into the contract? -> remove {handle_cancel_order}
 
@@ -356,7 +357,8 @@ program aigc_ver_0.aleo{
             amount: 0u64,
         };
 
-        let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, fee);
+        // lock fee in this program
+        let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, fee);
         return (change, bid_record) then finalize(
             self.caller,
             nft_id,
@@ -438,7 +440,7 @@ program aigc_ver_0.aleo{
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
 
-        // vefiry order
+        // verify order
         let order: Order = orders.get(nft_id);
         assert_eq(order.status, ORDER_STATUS_CANCELLED);
         assert_eq(receiver, order.holder);
@@ -595,7 +597,9 @@ program aigc_ver_0.aleo{
         orders.remove(nft_id);
     }
 
-    transition set_admin(admin_new: address) {
+    transition set_admin(
+        public admin_new: address,
+    ) {
         return then finalize(
             self.caller,
             admin_new
@@ -618,7 +622,9 @@ program aigc_ver_0.aleo{
         );
     }
 
-    transition set_fee(fee_new: u64) {
+    transition set_fee(
+        public fee_new: u64,
+    ) {
         return then finalize(
             self.caller,
             fee_new,
@@ -639,5 +645,21 @@ program aigc_ver_0.aleo{
                 fee: fee_new,
             },
         );
+    }
+
+    transition withdraw_fee(
+        public fee_to_withdraw: u64,
+        public recipient: address,
+    ) {
+        credits.leo/transfer_public(recipient, fee_to_withdraw);
+        return then finalize(
+            self.caller,
+        );
+    }
+
+    finalize withdraw_fee(
+        caller: address,
+    ) {
+        assert_eq(caller, settings.get(true).admin);
     }
 }
