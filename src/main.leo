@@ -12,6 +12,9 @@ program aigc_ver_0.aleo{
     // 7. remove bid amount overflow check
     // 8. finalize parameters: {place_order}
     // 9. some constants
+    // 10. add deadline check in {bid_order}
+
+    // discussion: lock nft into the contract? -> remove {handle_cancel_order}
 
     const THIS_ADDRESS: address = aleo1ax4yjycz4hezsd34urj6w5x8y4m7xhrh0f4few4xg05eylzapsrs3lax9n;
     const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
@@ -56,7 +59,7 @@ program aigc_ver_0.aleo{
 
     struct Bid {
         bidder: address,    // bidder address
-        nft_id: field,
+        nft_id: u128,
         amount: u64,
     }
 
@@ -442,62 +445,70 @@ program aigc_ver_0.aleo{
         bids.remove(nft_id);
         orders.remove(nft_id);
     }
-//
-//     transition bid_order (
-//         private credit: credits.leo/credits,
-//         public nft_id: field,
-//         public amount: u64,
-//         public admin_in: address,
-//     ) -> (BidRecord, credits.leo/credits) {
-//         assert(amount > 0u64 && amount <= 18446744073709551615u64);
-//         let bid_record: BidRecord = BidRecord {
-//             owner: admin_in,
-//             bid_type: 1u8,
-//             bidder: self.caller,
-//             nft_id: nft_id,
-//             amount: amount,
-//         };
-//         let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount);
-//         return (bid_record, change) then finalize(self.caller, nft_id, amount, admin_in);
-//     }
-//
-//     finalize bid_order (
-//         caller: address,
-//         nft_id: field,
-//         amount: u64,
-//         admin_in: address,
-//     ) {
-//         //verify admin
-//         assert(Mapping::contains(admin, true));
-//         let real_admin: address = Mapping::get(admin, true);
-//         assert_eq(real_admin, admin_in);
-//
-//         //add bid
-//         let bid : Bid = Bid {
-//             bidder: caller,
-//             nft_id: nft_id,
-//             amount : amount,
-//         };
-//         Mapping::set(bids, nft_id, bid);
-//
-//         //verify order
-//         assert(Mapping::contains(orders, nft_id));
-//         let order: Order = Mapping::get(orders, nft_id);
-//         assert(order.status == 1u8);
-//         assert(amount >= order.amount);
-//
-//         //update order
-//         let order_update : Order = Order {
-//             holder: order.holder,
-//             nft_id: order.nft_id,
-//             amount: order.amount,
-//             order_type: order.order_type,
-//             status: 3u8,
-//             deadline: 0field,
-//         };
-//
-//         Mapping::set(orders, nft_id, order_update);
-//     }
+
+    transition bid_order (
+        private credit: credits.leo/credits,
+        public nft_id: u128,
+        public amount: u64,
+        public admin_in: address,
+    ) -> (BidRecord, credits.leo/credits) {
+        let bid_record: BidRecord = BidRecord {
+            owner: admin_in,
+            bid_type: BID_TYPE_BID,
+            bidder: self.caller,
+            nft_id: nft_id,
+            amount: amount,
+        };
+
+        // lock credits in this program
+        let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, amount);
+        return (bid_record, change) then finalize(
+            self.caller,
+            nft_id,
+            amount,
+            admin_in,
+        );
+    }
+
+    finalize bid_order (
+        caller: address,
+        nft_id: u128,
+        amount: u64,
+        admin_in: address,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(admin_in, setting.admin);
+
+        // add bid
+        bids.set(
+            nft_id,
+            Bid {
+                bidder: caller,
+                nft_id: nft_id,
+                amount : amount,
+            },
+        );
+
+        // verify order
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
+        assert(amount >= order.amount);
+        // deadline check
+        assert(block.height < order.deadline);
+
+        // update order
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: order.amount,
+                order_type: order.order_type,
+                status: ORDER_STATUS_FINISHED,
+                deadline: order.deadline,
+            },
+        );
+    }
 //
 //     transition finish_order (
 //         public nft_id: field,
