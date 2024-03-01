@@ -595,7 +595,6 @@ program aigc_ver_0.aleo{
         orders.remove(nft_id);
     }
 
-
     transition set_admin(admin_new: address) {
         return then finalize(
             self.caller,
@@ -619,14 +618,26 @@ program aigc_ver_0.aleo{
         );
     }
 
-//     transition set_fee(fee: u64) {
-//         return then finalize(self.caller, fee);
-//     }
-//
-//     finalize set_fee(public caller: address, fee: u64) {
-//         let real_admin: address = Mapping::get(admin, true);
-//         assert_eq(caller, real_admin);
-//
-//         Mapping::set(fees, true, fee);
-//     }
+    transition set_fee(fee_new: u64) {
+        return then finalize(
+            self.caller,
+            fee_new,
+        );
+    }
+
+    finalize set_fee(
+        caller: address,
+        fee_new: u64,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: setting.admin,
+                fee: fee_new,
+            },
+        );
+    }
 }
