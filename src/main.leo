@@ -3,6 +3,7 @@ import credits.leo;
 // The 'aigc_ver_0.aleo' program.
 program aigc_ver_0.aleo{
     // optimize:
+    // 0. limit program id into 10 bytes (gas saving)
     // 1. change nft id from field to u128
     // 2. mapping operators
     // 3. lock amount into program in {bid_order}
@@ -593,19 +594,31 @@ program aigc_ver_0.aleo{
         bids.remove(nft_id);
         orders.remove(nft_id);
     }
-//
-//     //admin functions
-//
-//     transition set_admin(admin_new: address) {
-//         return then finalize(self.caller, admin_new);
-//     }
-//
-//     finalize set_admin(public caller: address, admin_new: address) {
-//        let real_admin: address = Mapping::get_or_use(admin, true, aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
-//         assert_eq(real_admin, caller);
-//         Mapping::set(admin, true, admin_new);
-//     }
-//
+
+
+    transition set_admin(admin_new: address) {
+        return then finalize(
+            self.caller,
+            admin_new
+        );
+    }
+
+    finalize set_admin(
+        caller: address,
+        admin_new: address
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: admin_new,
+                fee: setting.fee,
+            },
+        );
+    }
+
 //     transition set_fee(fee: u64) {
 //         return then finalize(self.caller, fee);
 //     }
