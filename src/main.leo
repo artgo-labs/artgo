@@ -4,18 +4,17 @@ import credits.leo;
 program aigc_ver_0.aleo{
     // optimize:
     // 0. limit program id into 10 bytes (gas saving)
-    // 1. change nft id from field to u128
-    // 2. mapping operators
-    // 3. lock credits amount(all bid amount + all fees) into program in {bid_order} && {cancel_order}
-    // 4. add init function
-    // 5. change deadline from field to u32
-    // 6. add global setting
-    // 7. remove bid amount overflow check
-    // 8. finalize parameters: {place_order} && {finish_order}
-    // 9. transition parameters: {finish_order}
-    // 10. some constants
-    // 11. add deadline check in {bid_order}
-    // 12. add {withdraw_fee}
+    // 1. mapping operators
+    // 2. lock credits amount(all bid amount + all fees) into program in {bid_order} && {cancel_order}
+    // 3. add init function
+    // 4. change deadline from field to u32
+    // 5. add global setting
+    // 6. remove bid amount overflow check
+    // 7. finalize parameters: {place_order} && {finish_order}
+    // 8. transition parameters: {finish_order}
+    // 9. some constants
+    // 10. add deadline check in {bid_order}
+    // 11. add {withdraw_fee}
 
     // discussion: lock nft into the contract? -> remove {handle_cancel_order}
 
@@ -53,7 +52,7 @@ program aigc_ver_0.aleo{
 
     struct Order {
         holder: address,
-        nft_id: u128,
+        nft_id: field,
         order_type: u8,
         amount: u64,
         status: u8,
@@ -62,7 +61,7 @@ program aigc_ver_0.aleo{
 
     struct Bid {
         bidder: address,    // bidder address
-        nft_id: u128,
+        nft_id: field,
         amount: u64,
     }
 
@@ -70,7 +69,7 @@ program aigc_ver_0.aleo{
         bid_type: u8,           //1-bid, 2-cancel
         owner: address,     
         bidder: address,
-        nft_id: u128,
+        nft_id: field,
         amount: u64,
     }
 
@@ -83,13 +82,13 @@ program aigc_ver_0.aleo{
     }
 
     //nft id --> nft info
-    mapping nfts: u128 => NftInfo;
+    mapping nfts: field => NftInfo;
     //true --> next nft id
-    mapping next_nft_id: bool => u128;
+    mapping next_nft_id: bool => field;
     //nft id --> Order
-    mapping orders: u128 => Order;
+    mapping orders: field => Order;
     //nft id --> bid
-    mapping bids: u128 => Bid;
+    mapping bids: field => Bid;
     //true -> Setting
     mapping settings: bool => Setting;
 
@@ -126,7 +125,7 @@ program aigc_ver_0.aleo{
 
         next_nft_id.set(
             true,
-            1u128
+            1field
         );
     }
 
@@ -164,11 +163,11 @@ program aigc_ver_0.aleo{
         hash: field,
         uri: Field2,
     ) {
-        let nft_id: u128 = next_nft_id.get(true);
+        let nft_id: field = next_nft_id.get(true);
 
         next_nft_id.set(
             true,
-            nft_id + 1u128,
+            nft_id + 1field,
         );
 
         nfts.set(
@@ -183,7 +182,7 @@ program aigc_ver_0.aleo{
     }
 
     transition transfer_private_nft (
-        nft_id: u128,
+        nft_id: field,
         nft: Nft,
         receiver: address
     ) -> Nft {
@@ -212,7 +211,7 @@ program aigc_ver_0.aleo{
     }
 
     finalize transfer_private_nft (
-        nft_id: u128,
+        nft_id: field,
         hash: field,
         uri: Field2,
         receiver: address,
@@ -233,7 +232,7 @@ program aigc_ver_0.aleo{
     }
 
     transition place_order (
-        public nft_id: u128,
+        public nft_id: field,
         private nft: Nft,
         public order_type: u8,
         public amount: u64,
@@ -274,7 +273,7 @@ program aigc_ver_0.aleo{
 
     finalize place_order (
         admin_in: address,
-        nft_id: u128,
+        nft_id: field,
         hash: field,
         uri: Field2,
         caller: address,
@@ -308,7 +307,7 @@ program aigc_ver_0.aleo{
     }
 
     transition update_order (
-        public nft_id: u128,
+        public nft_id: field,
         public new_amount: u64,
     ) {
         return then finalize(
@@ -320,7 +319,7 @@ program aigc_ver_0.aleo{
 
     finalize update_order (
         owner: address,
-        nft_id: u128,
+        nft_id: field,
         amount_new: u64,
     ) {
         let setting: Setting = settings.get(true);
@@ -346,7 +345,7 @@ program aigc_ver_0.aleo{
     transition cancel_order (
         private credit: credits.leo/credits,
         public fee: u64,
-        public nft_id: u128,
+        public nft_id: field,
         public admin_in: address,
     ) -> (credits.leo/credits, BidRecord) {
         let bid_record: BidRecord = BidRecord {
@@ -369,7 +368,7 @@ program aigc_ver_0.aleo{
 
     finalize cancel_order (
         owner: address,
-        nft_id: u128,
+        nft_id: field,
         fee: u64,
         admin_in: address,
     ) {
@@ -396,7 +395,7 @@ program aigc_ver_0.aleo{
 
     // handle cancel order, delete states
     transition handle_cancel_order (
-        public nft_id: u128,
+        public nft_id: field,
         private nft: Nft,
         public receiver: address,
     ) -> Nft {
@@ -426,7 +425,7 @@ program aigc_ver_0.aleo{
     }
 
     finalize handle_cancel_order (
-        nft_id: u128,
+        nft_id: field,
         hash: field,
         uri: Field2,
         receiver: address,
@@ -452,7 +451,7 @@ program aigc_ver_0.aleo{
 
     transition bid_order (
         private credit: credits.leo/credits,
-        public nft_id: u128,
+        public nft_id: field,
         public amount: u64,
         public admin_in: address,
     ) -> (BidRecord, credits.leo/credits) {
@@ -476,7 +475,7 @@ program aigc_ver_0.aleo{
 
     finalize bid_order (
         caller: address,
-        nft_id: u128,
+        nft_id: field,
         amount: u64,
         admin_in: address,
     ) {
@@ -516,7 +515,7 @@ program aigc_ver_0.aleo{
 
     // ONLY ADMIN
     transition finish_order (
-        public nft_id: u128,
+        public nft_id: field,
         private nft: Nft,
         public holder: address,
         public fee: u64,
@@ -555,7 +554,7 @@ program aigc_ver_0.aleo{
     }
 
     finalize finish_order (
-        nft_id: u128,
+        nft_id: field,
         holder: address,
         hash: field,
         uri: Field2,
