@@ -1,7 +1,7 @@
 import credits.leo;
 
-// The 'aigc_ver_0.aleo' program.
-program aigc_ver_0.aleo{
+// The 'artgo_aigc_v1_4.aleo' program.
+program artgo_aigc_v1_4.aleo{
     // optimize:
     // 0. limit program id into 10 bytes (gas saving)
     // 1. mapping operators
@@ -16,6 +16,7 @@ program aigc_ver_0.aleo{
     // 10. add deadline check in {bid_order}
     // 11. add {withdraw_fee}
 
+    // todo: add operator
     // discussion: lock nft into the contract? -> remove {handle_cancel_order}
 
     const THIS_ADDRESS: address = aleo1ax4yjycz4hezsd34urj6w5x8y4m7xhrh0f4few4xg05eylzapsrs3lax9n;
@@ -94,23 +95,27 @@ program aigc_ver_0.aleo{
 
     struct Setting {
         admin: address,
+        operator: address,
         fee: u64,
     }
 
     transition init(
         public admin: address,
+        public operator: address,
         public fee: u64
     ) {
         assert_eq(self.caller, INITIALIZER);
 
         return then finalize(
             admin,
+            operator,
             fee,
         );
     }
 
     finalize init(
         admin: address,
+        operator: address,
         fee: u64
     ) {
         assert_eq(settings.contains(true), false);
@@ -119,6 +124,7 @@ program aigc_ver_0.aleo{
             true,
             Setting {
                 admin: admin,
+                operator: operator,
                 fee: fee,
             }
         );
@@ -237,7 +243,7 @@ program aigc_ver_0.aleo{
         public order_type: u8,
         public amount: u64,
         public deadline: u32,
-        public admin_in: address
+        public operator_in: address
     ) -> Nft {
         // only support buy / sell atm
         assert_eq(order_type, ORDER_TYPE_NORMAL);
@@ -252,7 +258,7 @@ program aigc_ver_0.aleo{
 
         // find order based on hash offchain
         let nft_transfer : Nft = Nft {
-            owner: admin_in,
+            owner: operator_in,
             minter: nft.minter,
             prompt: nft.prompt,
             nonce: nft.nonce,
@@ -260,7 +266,7 @@ program aigc_ver_0.aleo{
         };
 
         return nft_transfer then finalize(
-            admin_in,
+            operator_in,
             nft_id,
             hash,
             nft.uri,
@@ -272,7 +278,7 @@ program aigc_ver_0.aleo{
     }
 
     finalize place_order (
-        admin_in: address,
+        operator_in: address,
         nft_id: field,
         hash: field,
         uri: Field2,
@@ -284,7 +290,7 @@ program aigc_ver_0.aleo{
         assert(deadline > block.height);
 
         let setting: Setting = settings.get(true);
-        assert_eq(admin_in, setting.admin);
+        assert_eq(operator_in, setting.operator);
         assert(amount >= setting.fee);
 
         let nft: NftInfo = Mapping::get(nfts, nft_id);
@@ -346,10 +352,10 @@ program aigc_ver_0.aleo{
         private credit: credits.leo/credits,
         public fee: u64,
         public nft_id: field,
-        public admin_in: address,
+        public operator_in: address,
     ) -> (credits.leo/credits, BidRecord) {
         let bid_record: BidRecord = BidRecord {
-            owner: admin_in,
+            owner: operator_in,
             bid_type: BID_TYPE_CANCEL,
             bidder: self.caller,
             nft_id: nft_id,
@@ -362,7 +368,7 @@ program aigc_ver_0.aleo{
             self.caller,
             nft_id,
             fee,
-            admin_in,
+            operator_in,
         );
     }
 
@@ -370,11 +376,11 @@ program aigc_ver_0.aleo{
         owner: address,
         nft_id: field,
         fee: u64,
-        admin_in: address,
+        operator_in: address,
     ) {
         let setting: Setting = settings.get(true);
         assert_eq(fee, setting.fee);
-        assert_eq(admin_in, setting.admin);
+        assert_eq(operator_in, setting.operator);
 
         let order: Order = orders.get(nft_id);
         assert_eq(order.status, ORDER_STATUS_TRADING);
@@ -429,10 +435,10 @@ program aigc_ver_0.aleo{
         hash: field,
         uri: Field2,
         receiver: address,
-        admin_in: address,
+        caller: address,
     ) {
         let setting: Setting = settings.get(true);
-        assert_eq(admin_in, setting.admin);
+        assert_eq(caller, setting.operator);
 
         // verify nft
         let nft: NftInfo = nfts.get(nft_id);
@@ -453,10 +459,10 @@ program aigc_ver_0.aleo{
         private credit: credits.leo/credits,
         public nft_id: field,
         public amount: u64,
-        public admin_in: address,
+        public operator_in: address,
     ) -> (BidRecord, credits.leo/credits) {
         let bid_record: BidRecord = BidRecord {
-            owner: admin_in,
+            owner: operator_in,
             bid_type: BID_TYPE_BID,
             bidder: self.caller,
             nft_id: nft_id,
@@ -469,7 +475,7 @@ program aigc_ver_0.aleo{
             self.caller,
             nft_id,
             amount,
-            admin_in,
+            operator_in,
         );
     }
 
@@ -477,10 +483,10 @@ program aigc_ver_0.aleo{
         caller: address,
         nft_id: field,
         amount: u64,
-        admin_in: address,
+        operator_in: address,
     ) {
         let setting: Setting = settings.get(true);
-        assert_eq(admin_in, setting.admin);
+        assert_eq(operator_in, setting.operator);
 
         // add bid
         bids.set(
@@ -513,7 +519,7 @@ program aigc_ver_0.aleo{
         );
     }
 
-    // ONLY ADMIN
+    // ONLY OPERATOR
     transition finish_order (
         public nft_id: field,
         private nft: Nft,
@@ -564,7 +570,7 @@ program aigc_ver_0.aleo{
         caller: address,
     ) {
         let setting: Setting = settings.get(true);
-        assert_eq(caller, setting.admin);
+        assert_eq(caller, setting.operator);
         assert_eq(fee, setting.fee);
 
         // verify order status
@@ -616,6 +622,33 @@ program aigc_ver_0.aleo{
             true,
             Setting {
                 admin: admin_new,
+                operator: setting.operator,
+                fee: setting.fee,
+            },
+        );
+    }
+
+    transition set_operator(
+        public operator_new: address,
+    ) {
+        return then finalize(
+            self.caller,
+            operator_new
+        );
+    }
+
+    finalize set_operator(
+        caller: address,
+        operator_new: address
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: setting.admin,
+                operator: operator_new,
                 fee: setting.fee,
             },
         );
@@ -641,6 +674,7 @@ program aigc_ver_0.aleo{
             true,
             Setting {
                 admin: setting.admin,
+                operator: setting.operator,
                 fee: fee_new,
             },
         );
