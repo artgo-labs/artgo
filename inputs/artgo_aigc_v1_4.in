@@ -1,0 +1,11 @@
+// The program input for artgo/src/main.leo
+[mint_nft]
+prompt: Field2 = Field2 {
+    first: 1field,
+    second: 2field
+};
+uri: Field2 = Field2 {
+    first: 1field,
+    second: 2field
+};
+nonce: field = 1024field;
