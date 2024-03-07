@@ -1,9 +1,9 @@
 import credits.leo;
 
-// The 'artgo_aigc_v1_4.aleo' program.
-program artgo_aigc_v1_4.aleo{
+// The 'artgo_aigc_v1_5.aleo' program.
+program artgo_aigc_v1_5.aleo{
 
-    const THIS_ADDRESS: address = aleo1p4qhv8tc869ufe0w7q5r7xu5vsqsn7kqc7pcyspn5p43e9ax6sgqjc65g5;
+    const THIS_ADDRESS: address = aleo1j4qk24qk56nkeczdar0e3gjx8yy79xsx7py8su6pg8k7yr99gcqs8t4lef;
     const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
 
     // order status
