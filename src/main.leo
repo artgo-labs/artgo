@@ -3,7 +3,7 @@ import credits.leo;
 // The 'artgo_aigc_v1_4.aleo' program.
 program artgo_aigc_v1_4.aleo{
 
-    const THIS_ADDRESS: address = aleo1ax4yjycz4hezsd34urj6w5x8y4m7xhrh0f4few4xg05eylzapsrs3lax9n;
+    const THIS_ADDRESS: address = aleo1p4qhv8tc869ufe0w7q5r7xu5vsqsn7kqc7pcyspn5p43e9ax6sgqjc65g5;
     const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
 
     // order status
