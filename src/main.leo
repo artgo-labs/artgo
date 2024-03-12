@@ -1,9 +1,9 @@
 import credits.leo;
 
-// The 'artgo_aigc_v1_5.aleo' program.
-program artgo_aigc_v1_5.aleo{
+// The 'artgo_aigc_v1_6.aleo' program.
+program artgo_aigc_v1_6.aleo{
 
-    const THIS_ADDRESS: address = aleo1j4qk24qk56nkeczdar0e3gjx8yy79xsx7py8su6pg8k7yr99gcqs8t4lef;
+    const THIS_ADDRESS: address = aleo17lpfjzs23ny7q8n0wl0fzvkcwfx9m3arhxdrjc5xvw35dqx8mqpsllzxdh;
     const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
 
     // order status
@@ -25,7 +25,7 @@ program artgo_aigc_v1_5.aleo{
 
     struct NftHash {
         minter: address,
-        prompt: [u128;2],
+        prompt: [u128;3],
         nonce: u128,
     }
 
@@ -33,7 +33,7 @@ program artgo_aigc_v1_5.aleo{
         holder: address,
         minter: address,
         hash: field,
-        uri: [u128;2],
+        uri: [u128;3],
     }
 
     struct Order {
@@ -62,9 +62,9 @@ program artgo_aigc_v1_5.aleo{
     record Nft {
         owner: address,
         minter: address,
-        prompt: [u128;2],
+        prompt: [u128;3],
         nonce: u128,
-        uri: [u128;2],
+        uri: [u128;3],
     }
 
     //nft id --> nft info
@@ -122,8 +122,8 @@ program artgo_aigc_v1_5.aleo{
 
     // mint aigc nft
     transition mint_nft (
-        private prompt: [u128;2],
-        public uri: [u128;2],
+        private prompt: [u128;3],
+        public uri: [u128;3],
         public nonce: u128
     ) -> Nft {
         let hash: field = BHP256::hash_to_field(
@@ -152,7 +152,7 @@ program artgo_aigc_v1_5.aleo{
     finalize mint_nft (
         holder: address,
         hash: field,
-        uri: [u128;2],
+        uri: [u128;3],
     ) {
         let nft_id: u128 = next_nft_id.get(true);
 
@@ -204,7 +204,7 @@ program artgo_aigc_v1_5.aleo{
     finalize transfer_private_nft (
         nft_id: u128,
         hash: field,
-        uri: [u128;2],
+        uri: [u128;3],
         receiver: address,
     ) {
         let nft: NftInfo = nfts.get(nft_id);
@@ -266,7 +266,7 @@ program artgo_aigc_v1_5.aleo{
         operator_in: address,
         nft_id: u128,
         hash: field,
-        uri: [u128;2],
+        uri: [u128;3],
         caller: address,
         order_type: u8,
         amount: u64,
@@ -418,7 +418,7 @@ program artgo_aigc_v1_5.aleo{
     finalize handle_cancel_order (
         nft_id: u128,
         hash: field,
-        uri: [u128;2],
+        uri: [u128;3],
         receiver: address,
         caller: address,
     ) {
@@ -548,7 +548,7 @@ program artgo_aigc_v1_5.aleo{
         nft_id: u128,
         holder: address,
         hash: field,
-        uri: [u128;2],
+        uri: [u128;3],
         winner: address,
         winner_amount: u64,
         fee: u64,
