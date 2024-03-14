@@ -1,3 +1,7 @@
 outputs/
 build/
 .vscode/
+.idea/
+.env
+scripts/dev_env/
+scripts/testnet3_env/
