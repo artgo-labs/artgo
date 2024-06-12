@@ -121,7 +121,7 @@ program artgo_aigc_v0_1.aleo{
     }
 
     // mint aigc nft
-    async transition mint_nft (
+    async transition mint_nft(
         private prompt: [u128;3],
         public uri: [u128;3],
         public nonce: u128
@@ -146,7 +146,7 @@ program artgo_aigc_v0_1.aleo{
                 self.caller,
                 hash,
                 uri,
-            );
+        );
 
         return (nft, f);
     }
@@ -174,55 +174,57 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-//     transition transfer_private_nft (
-//         nft_id: u128,
-//         nft: Nft,
-//         receiver: address
-//     ) -> Nft {
-//         let hash: field = BHP256::hash_to_field(
-//             NftHash {
-//                 minter: nft.minter,
-//                 prompt: nft.prompt,
-//                 nonce: nft.nonce,
-//             },
-//         );
-//
-//         let transferred: Nft = Nft {
-//             owner: receiver,
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//             uri: nft.uri,
-//         };
-//
-//         return transferred then finalize(
-//             nft_id,
-//             hash,
-//             nft.uri,
-//             receiver,
-//         );
-//     }
-//
-//     finalize transfer_private_nft (
-//         nft_id: u128,
-//         hash: field,
-//         uri: [u128;3],
-//         receiver: address,
-//     ) {
-//         let nft: NftInfo = nfts.get(nft_id);
-//         assert_eq(nft.hash, hash);
-//         assert_eq(nft.uri, uri);
-//
-//         nfts.set(
-//             nft_id,
-//             NftInfo {
-//                 holder: receiver,
-//                 minter: nft.minter,
-//                 hash: nft.hash,
-//                 uri: nft.uri,
-//             },
-//         );
-//     }
+    async transition transfer_private_nft(
+        nft_id: u128,
+        nft: Nft,
+        receiver: address
+    ) -> (Nft, Future) {
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
+
+        let transferred: Nft = Nft {
+            owner: receiver,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        let f: Future = finalize_transfer_private_nft(
+            nft_id,
+            hash,
+            nft.uri,
+            receiver,
+        );
+
+        return (transferred, f);
+    }
+
+    async function finalize_transfer_private_nft(
+        nft_id: u128,
+        hash: field,
+        uri: [u128;3],
+        receiver: address,
+    ) {
+        let nft: NftInfo = nfts.get(nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
+
+        nfts.set(
+            nft_id,
+            NftInfo {
+                holder: receiver,
+                minter: nft.minter,
+                hash: nft.hash,
+                uri: nft.uri,
+            },
+        );
+    }
 //
 //     transition place_order (
 //         public nft_id: u128,
