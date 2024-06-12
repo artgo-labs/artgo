@@ -1,38 +1,53 @@
 import credits.leo;
 
-// The 'artgo_aigc_v1.aleo' program.
-program artgo_aigc_v1_3.aleo{
+// The 'artgo_aigc_v1_6.aleo' program.
+program artgo_aigc_v1_6.aleo{
 
-    struct Field2 {
-        first: field,   
-        second: field,
-    }
+    const THIS_ADDRESS: address = aleo17lpfjzs23ny7q8n0wl0fzvkcwfx9m3arhxdrjc5xvw35dqx8mqpsllzxdh;
+    const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
+
+    // order status
+    const ORDER_STATUS_TRADING: u8 = 1u8;
+    const ORDER_STATUS_CANCELLED: u8 = 2u8;
+    const ORDER_STATUS_FINISHED: u8 = 3u8;
+    // order type
+    const ORDER_TYPE_NORMAL: u8 = 1u8;
+    const ORDER_TYPE_AUCTION: u8 = 2u8;
+
+    // bid type
+    const BID_TYPE_BID: u8 = 1u8;
+    const BID_TYPE_CANCEL: u8 = 2u8;
+
+//     struct Field2 {
+//         first: field,
+//         second: field,
+//     }
 
     struct NftHash {
         minter: address,
-        prompt: Field2,
-        nonce: field,
+        prompt: [u128;3],
+        nonce: u128,
     }
 
     struct NftInfo {
         holder: address,
         minter: address,
         hash: field,
-        uri: Field2,
+        uri: [u128;3],
     }
 
     struct Order {
         holder: address,
-        nft_id: field,
+        nft_id: u128,
         order_type: u8,
         amount: u64,
         status: u8,
-        deadline: field,
+        deadline: u32,
     }
 
     struct Bid {
         bidder: address,    // bidder address
-        nft_id: field,
+        nft_id: u128,
         amount: u64,
     }
 
@@ -40,45 +55,84 @@ program artgo_aigc_v1_3.aleo{
         bid_type: u8,           //1-bid, 2-cancel
         owner: address,     
         bidder: address,
-        nft_id: field,
+        nft_id: u128,
         amount: u64,
     }
 
     record Nft {
         owner: address,
         minter: address,
-        prompt: Field2,
-        nonce: field,
-        uri: Field2,
+        prompt: [u128;3],
+        nonce: u128,
+        uri: [u128;3],
     }
 
     //nft id --> nft info
-    mapping nfts: field => NftInfo;
-    //true --> max token id
-    mapping tokenId: bool => field;
-    //true --> admin
-    mapping admin: bool => address;
-    //true --> fee
-    mapping fees: bool => u64;
+    mapping nfts: u128 => NftInfo;
+    //true --> next nft id
+    mapping next_nft_id: bool => u128;
     //nft id --> Order
-    mapping orders: field => Order;
+    mapping orders: u128 => Order;
     //nft id --> bid
-    mapping bids: field => Bid;
+    mapping bids: u128 => Bid;
+    //true -> Setting
+    mapping settings: bool => Setting;
+
+    struct Setting {
+        admin: address,
+        operator: address,
+        fee: u64,
+    }
+
+    transition init(
+        public admin: address,
+        public operator: address,
+        public fee: u64
+    ) {
+        assert_eq(self.caller, INITIALIZER);
+
+        return then finalize(
+            admin,
+            operator,
+            fee,
+        );
+    }
+
+    finalize init(
+        admin: address,
+        operator: address,
+        fee: u64
+    ) {
+        assert_eq(settings.contains(true), false);
+
+        settings.set(
+            true,
+            Setting {
+                admin: admin,
+                operator: operator,
+                fee: fee,
+            }
+        );
+
+        next_nft_id.set(
+            true,
+            1u128
+        );
+    }
 
     // mint aigc nft
     transition mint_nft (
-        private prompt: Field2, 
-        public uri: Field2, 
-        public nonce: field
+        private prompt: [u128;3],
+        public uri: [u128;3],
+        public nonce: u128
     ) -> Nft {
-
-        let digest: NftHash = NftHash {
-            minter: self.caller,
-            prompt: prompt,
-            nonce: nonce,
-        };
-
-        let hash: field = BHP256::hash_to_field(digest);
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: self.caller,
+                prompt: prompt,
+                nonce: nonce,
+            },
+        );
 
         let nft: Nft = Nft {
             owner: self.caller,
@@ -88,43 +142,48 @@ program artgo_aigc_v1_3.aleo{
             uri: uri,
         };
 
-        return nft then finalize(self.caller, hash, uri);
+        return nft then finalize(
+            self.caller,
+            hash,
+            uri,
+        );
     }
 
     finalize mint_nft (
-        holder: address, 
-        hash: field, 
-        uri: Field2, 
+        holder: address,
+        hash: field,
+        uri: [u128;3],
     ) {
-        let token_id: field = Mapping::get_or_use(tokenId, true, 1field);
-        Mapping::set(tokenId, true, token_id + 1field);
+        let nft_id: u128 = next_nft_id.get(true);
 
-        let info: NftInfo = NftInfo{
-            holder: holder,
-            minter: holder,
-            hash: hash,
-            uri: uri,
-        };
-        Mapping::set(nfts, token_id, info);
+        next_nft_id.set(
+            true,
+            nft_id + 1u128,
+        );
+
+        nfts.set(
+            nft_id,
+            NftInfo{
+                holder: holder,
+                minter: holder,
+                hash: hash,
+                uri: uri,
+            },
+        );
     }
 
     transition transfer_private_nft (
-        nft_id: field,
-        nft: Nft, 
+        nft_id: u128,
+        nft: Nft,
         receiver: address
     ) -> Nft {
-        //verify owner
-        assert(nft.owner == self.caller);
-
-        // Produce a Nft record for the specified receiver.
-        // check validity
-        let digest: NftHash = NftHash {
-            minter: nft.minter,
-            prompt: nft.prompt,
-            nonce: nft.nonce,
-        };
-
-        let hash: field = BHP256::hash_to_field(digest);
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
 
         let transferred: Nft = Nft {
             owner: receiver,
@@ -134,186 +193,203 @@ program artgo_aigc_v1_3.aleo{
             uri: nft.uri,
         };
 
-        return transferred then finalize(nft_id, hash, nft.uri, receiver);
+        return transferred then finalize(
+            nft_id,
+            hash,
+            nft.uri,
+            receiver,
+        );
     }
 
     finalize transfer_private_nft (
-        nft_id: field,
+        nft_id: u128,
         hash: field,
-        uri: Field2,
+        uri: [u128;3],
         receiver: address,
     ) {
-        let nft: NftInfo = Mapping::get(nfts, nft_id);
+        let nft: NftInfo = nfts.get(nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
 
-        //change holder info
-        let info: NftInfo = NftInfo {
-            holder: receiver,
-            minter: nft.minter,
-            hash: nft.hash,
-            uri: nft.uri,
-        };
-        Mapping::set(nfts, nft_id, info);
+        nfts.set(
+            nft_id,
+            NftInfo {
+                holder: receiver,
+                minter: nft.minter,
+                hash: nft.hash,
+                uri: nft.uri,
+            },
+        );
     }
 
     transition place_order (
-        public nft_id: field,
-        private nft: Nft, 
-        public order_type: u8, 
-        public amount: u64, 
-        public deadline: field, 
-        public admin_in: address
+        public nft_id: u128,
+        private nft: Nft,
+        public order_type: u8,
+        public amount: u64,
+        public deadline: u32,
+        public operator_in: address
     ) -> Nft {
-        //Only support buy / sell atm
-        assert(order_type == 1u8);    
-        assert(amount > 0u64 && amount <= 18446744073709551615u64);
+        // only support buy / sell atm
+        assert_eq(order_type, ORDER_TYPE_NORMAL);
 
-        let digest: NftHash = NftHash {
-            minter: nft.minter,
-            prompt: nft.prompt,
-            nonce: nft.nonce,
-        };
-        let hash: field = BHP256::hash_to_field(digest);
-
-        let order : Order = Order {
-            holder: self.caller,
-            nft_id: nft_id,
-            amount: amount,
-            order_type: order_type,
-            status: 1u8,
-            deadline: 0field,
-        };
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            }
+        );
 
         // find order based on hash offchain
         let nft_transfer : Nft = Nft {
-            owner: admin_in,
+            owner: operator_in,
             minter: nft.minter,
             prompt: nft.prompt,
             nonce: nft.nonce,
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(admin_in, nft_id, hash, nft.uri, order);
+        return nft_transfer then finalize(
+            operator_in,
+            nft_id,
+            hash,
+            nft.uri,
+            self.caller,
+            order_type,
+            amount,
+            deadline,
+        );
     }
 
     finalize place_order (
-        admin_in: address, 
-        nft_id: field,
+        operator_in: address,
+        nft_id: u128,
         hash: field,
-        uri: Field2, 
-        order: Order
+        uri: [u128;3],
+        caller: address,
+        order_type: u8,
+        amount: u64,
+        deadline: u32,
     ) {
-        //Get admin
-        assert(Mapping::contains(admin, true));
-        let real_admin: address = Mapping::get(admin, true);
-        assert_eq(real_admin, admin_in);
+        assert(deadline > block.height);
+
+        let setting: Setting = settings.get(true);
+        assert_eq(operator_in, setting.operator);
+        assert(amount >= setting.fee);
 
         let nft: NftInfo = Mapping::get(nfts, nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
-        
-        //update order information
-        assert(Mapping::contains(fees, true));
-        let real_fee: u64 = Mapping::get(fees, true);
-        assert(order.amount >= real_fee);  //check greater than fee
 
-        assert(!Mapping::contains(orders, nft_id));
-        Mapping::set(orders, nft_id, order);
+        // update order information
+        assert_eq(orders.contains(nft_id), false);
+        orders.set(
+            nft_id,
+            Order {
+                holder: caller,
+                nft_id: nft_id,
+                amount: amount,
+                order_type: order_type,
+                status: ORDER_STATUS_TRADING,
+                deadline: deadline,
+            },
+        );
     }
 
     transition update_order (
-        public nft_id: field,
+        public nft_id: u128,
         public new_amount: u64,
     ) {
-        assert(new_amount > 0u64 && new_amount <= 18446744073709551615u64);
-        return then finalize(self.caller, nft_id, new_amount);
+        return then finalize(
+            self.caller,
+            nft_id,
+            new_amount
+        );
     }
 
     finalize update_order (
         owner: address,
-        nft_id: field,
+        nft_id: u128,
         amount_new: u64,
     ) {
-        let order: Order = Mapping::get(orders, nft_id);
-        assert(order.status == 1u8);
-        assert(owner == order.holder);
+        let setting: Setting = settings.get(true);
+        assert(amount_new >= setting.fee);
 
-        assert(Mapping::contains(fees, true));
-        let real_fee: u64 = Mapping::get(fees, true);
-        assert(amount_new >= real_fee);  //check greater than fee
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
+        assert_eq(owner, order.holder);
 
-        let order_update : Order = Order {
-            holder: order.holder,
-            nft_id: order.nft_id,
-            amount: amount_new,
-            order_type: order.order_type,
-            status: order.status,
-            deadline: order.deadline,
-        };
-
-        Mapping::set(orders, nft_id, order_update);
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: amount_new,
+                order_type: order.order_type,
+                status: order.status,
+                deadline: order.deadline,
+            },
+        );
     }
 
     transition cancel_order (
         private credit: credits.leo/credits,
         public fee: u64,
-        public nft_id: field,
-        public admin_in: address,
+        public nft_id: u128,
+        public operator_in: address,
     ) -> (credits.leo/credits, BidRecord) {
-        //charge fee
-        assert(fee <= credit.microcredits);
-
         let bid_record: BidRecord = BidRecord {
-            owner: admin_in,
-            bid_type: 2u8,
+            owner: operator_in,
+            bid_type: BID_TYPE_CANCEL,
             bidder: self.caller,
             nft_id: nft_id,
             amount: 0u64,
         };
-        let change:credits = credits.leo/transfer_private_to_public(credit, admin_in, fee);
-        return (change, bid_record) then finalize(self.caller, nft_id, fee, admin_in);
-        
+
+        // lock fee in this program
+        let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, fee);
+        return (change, bid_record) then finalize(
+            self.caller,
+            nft_id,
+            fee,
+            operator_in,
+        );
     }
 
     finalize cancel_order (
         owner: address,
-        nft_id: field,
+        nft_id: u128,
         fee: u64,
-        admin_in: address,
+        operator_in: address,
     ) {
-        //charge 4 credits first, will change to settings later
-        assert(Mapping::contains(fees, true));
-        let real_fee: u64 = Mapping::get(fees, true);
-        assert_eq(real_fee, fee);
+        let setting: Setting = settings.get(true);
+        assert_eq(fee, setting.fee);
+        assert_eq(operator_in, setting.operator);
 
-        let order: Order = Mapping::get(orders, nft_id);
-        assert(order.status == 1u8);
-        assert(owner == order.holder);
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
+        assert_eq(owner, order.holder);
 
-        assert(Mapping::contains(admin, true));
-        let real_admin: address = Mapping::get(admin, true);
-        assert_eq(real_admin, admin_in);
-
-        let order_update : Order = Order {
-            holder: order.holder,
-            nft_id: order.nft_id,
-            amount: order.amount,
-            order_type: order.order_type,
-            status: 2u8,
-            deadline: order.deadline,
-        };
-
-        Mapping::set(orders, nft_id, order_update);
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: order.amount,
+                order_type: order.order_type,
+                status: ORDER_STATUS_CANCELLED,
+                deadline: order.deadline,
+            },
+        );
     }
 
-    //handle cancel order, delete states
+    // handle cancel order, delete states
     transition handle_cancel_order (
-        public nft_id: field,
-        private nft: Nft, 
+        public nft_id: u128,
+        private nft: Nft,
         public receiver: address,
     ) -> Nft {
-
         let nft_transfer : Nft = Nft {
             owner: receiver,
             minter: nft.minter,
@@ -322,122 +398,132 @@ program artgo_aigc_v1_3.aleo{
             uri: nft.uri,
         };
 
-        let digest: NftHash = NftHash {
-            minter: nft.minter,
-            prompt: nft.prompt,
-            nonce: nft.nonce,
-        };
-        let hash: field = BHP256::hash_to_field(digest);
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
 
-        return nft_transfer then finalize(nft_id, hash, nft.uri, receiver, self.caller);
+        return nft_transfer then finalize(
+            nft_id,
+            hash,
+            nft.uri,
+            receiver,
+            self.caller,
+        );
     }
 
     finalize handle_cancel_order (
-        nft_id: field,
+        nft_id: u128,
         hash: field,
-        uri: Field2,
+        uri: [u128;3],
         receiver: address,
-        admin_in: address,
+        caller: address,
     ) {
-        //verify admin
-        assert(Mapping::contains(admin, true));
-        let real_admin: address = Mapping::get(admin, true);
-        assert_eq(real_admin, admin_in);
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.operator);
 
-        //verify nft
-        let nft: NftInfo = Mapping::get(nfts, nft_id);
+        // verify nft
+        let nft: NftInfo = nfts.get(nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
 
-        //vefiry order
-        let order: Order = Mapping::get(orders, nft_id);
-        assert(order.status == 2u8);
-        assert(receiver == order.holder);
+        // verify order
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_CANCELLED);
+        assert_eq(receiver, order.holder);
 
-        //clear mappings
-        Mapping::remove(bids, nft_id);
-        Mapping::remove(orders, nft_id);
+        // clear mappings
+        bids.remove(nft_id);
+        orders.remove(nft_id);
     }
 
     transition bid_order (
-        private credit: credits.leo/credits, 
-        public nft_id: field, 
+        private credit: credits.leo/credits,
+        public nft_id: u128,
         public amount: u64,
-        public admin_in: address,
+        public operator_in: address,
     ) -> (BidRecord, credits.leo/credits) {
-        assert(amount > 0u64 && amount <= 18446744073709551615u64);
         let bid_record: BidRecord = BidRecord {
-            owner: admin_in,
-            bid_type: 1u8,
+            owner: operator_in,
+            bid_type: BID_TYPE_BID,
             bidder: self.caller,
             nft_id: nft_id,
             amount: amount,
         };
-        let change: credits = credits.leo/transfer_private_to_public(credit, admin_in, amount);
-        return (bid_record, change) then finalize(self.caller, nft_id, amount, admin_in);
+
+        // lock credits in this program
+        let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, amount);
+        return (bid_record, change) then finalize(
+            self.caller,
+            nft_id,
+            amount,
+            operator_in,
+        );
     }
 
     finalize bid_order (
         caller: address,
-        nft_id: field,
+        nft_id: u128,
         amount: u64,
-        admin_in: address,
+        operator_in: address,
     ) {
-        //verify admin
-        assert(Mapping::contains(admin, true));
-        let real_admin: address = Mapping::get(admin, true);
-        assert_eq(real_admin, admin_in);
+        let setting: Setting = settings.get(true);
+        assert_eq(operator_in, setting.operator);
 
-        //add bid
-        let bid : Bid = Bid {
-            bidder: caller,
-            nft_id: nft_id,
-            amount : amount,
-        };
-        Mapping::set(bids, nft_id, bid);
+        // add bid
+        bids.set(
+            nft_id,
+            Bid {
+                bidder: caller,
+                nft_id: nft_id,
+                amount : amount,
+            },
+        );
 
-        //verify order
-        assert(Mapping::contains(orders, nft_id));
-        let order: Order = Mapping::get(orders, nft_id);
-        assert(order.status == 1u8);
+        // verify order
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
         assert(amount >= order.amount);
+        // deadline check
+        assert(block.height < order.deadline);
 
-        //update order
-        let order_update : Order = Order {
-            holder: order.holder,
-            nft_id: order.nft_id,
-            amount: order.amount,
-            order_type: order.order_type,
-            status: 3u8,
-            deadline: 0field,
-        };
-
-        Mapping::set(orders, nft_id, order_update);
+        // update order
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: order.amount,
+                order_type: order.order_type,
+                status: ORDER_STATUS_FINISHED,
+                deadline: order.deadline,
+            },
+        );
     }
 
+    // ONLY OPERATOR
     transition finish_order (
-        public nft_id: field,
+        public nft_id: u128,
         private nft: Nft,
         public holder: address,
         public fee: u64,
         public winner: address,
         public winner_amount: u64,
-        public admin_in: address,
     ) -> (Nft){
-        //charge fee
-        assert(winner_amount >= fee && winner_amount <= 18446744073709551615u64);
-        assert_eq(self.caller, admin_in);
-
-        //transfer remaining amount
+        // transfer remaining amount
         credits.leo/transfer_public(holder, winner_amount - fee);
 
-        let digest: NftHash = NftHash {
-            minter: nft.minter,
-            prompt: nft.prompt,
-            nonce: nft.nonce,
-        };
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
 
-        let hash: field = BHP256::hash_to_field(digest);
         let nft_transfer : Nft = Nft {
             owner: winner,
             minter: nft.minter,
@@ -446,80 +532,152 @@ program artgo_aigc_v1_3.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(nft_id, holder, hash, nft.uri, winner, winner_amount, fee, admin_in);
+        return nft_transfer then finalize(
+            nft_id,
+            holder,
+            hash,
+            nft.uri,
+            winner,
+            winner_amount,
+            fee,
+            self.caller,
+        );
     }
 
     finalize finish_order (
-        nft_id: field,
+        nft_id: u128,
         holder: address,
         hash: field,
-        uri: Field2,
+        uri: [u128;3],
         winner: address,
         winner_amount: u64,
         fee: u64,
-        admin_in: address
+        caller: address,
     ) {
-        //verify admin
-        assert(Mapping::contains(admin, true));
-        let real_admin: address = Mapping::get(admin, true);
-        assert_eq(real_admin, admin_in);
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.operator);
+        assert_eq(fee, setting.fee);
 
-        assert(Mapping::contains(fees, true));
-        let real_fee: u64 = Mapping::get(fees, true);
-        assert_eq(real_fee, fee);
+        // verify order status
+        assert_eq(orders.get(nft_id).status, ORDER_STATUS_FINISHED);
 
-        //verify order
-        assert(Mapping::contains(orders, nft_id));
-        let order: Order = Mapping::get(orders, nft_id);
-        assert_eq(order.status, 3u8);
-
-        //verify nft
-        let nft: NftInfo = Mapping::get(nfts, nft_id);
+        let nft: NftInfo = nfts.get(nft_id);
         assert_eq(nft.hash, hash);
         assert_eq(nft.uri, uri);
         assert_eq(nft.holder, holder);
 
-        //verify bid
-        assert(Mapping::contains(bids, nft_id));
-        let bid: Bid = Mapping::get(bids, nft_id);
+        // verify bid
+        let bid: Bid = bids.get(nft_id);
         assert_eq(bid.bidder, winner);
-        assert(bid.amount == winner_amount);
+        assert_eq(bid.amount, winner_amount);
 
-        //change holder info
-        let info: NftInfo = NftInfo {
-            holder: winner,
-            minter: nft.minter,
-            hash: nft.hash,
-            uri: nft.uri,
-        };
-        Mapping::set(nfts, nft_id, info);
+        // update holder info
+        nfts.set(
+            nft_id,
+            NftInfo {
+                holder: winner,
+                minter: nft.minter,
+                hash: nft.hash,
+                uri: nft.uri,
+            },
+        );
 
-        //clear mappings
-        Mapping::remove(bids, nft_id);
-        Mapping::remove(orders, nft_id);
+        // clear mappings
+        bids.remove(nft_id);
+        orders.remove(nft_id);
     }
 
-    //admin functions
-
-    transition set_admin(admin_new: address) {
-        return then finalize(self.caller, admin_new);
+    transition set_admin(
+        public admin_new: address,
+    ) {
+        return then finalize(
+            self.caller,
+            admin_new
+        );
     }
 
-    finalize set_admin(public caller: address, admin_new: address) {
-       let real_admin: address = Mapping::get_or_use(admin, true, aleo12n3kz2wzrljvhp9zkn9zety54wz8mlmlakzzkrs6znaz028wjczqpe8x3j);
-        assert_eq(real_admin, caller);
-        Mapping::set(admin, true, admin_new);
+    finalize set_admin(
+        caller: address,
+        admin_new: address
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: admin_new,
+                operator: setting.operator,
+                fee: setting.fee,
+            },
+        );
     }
 
-    transition set_fee(fee: u64) {
-        return then finalize(self.caller, fee);
+    transition set_operator(
+        public operator_new: address,
+    ) {
+        return then finalize(
+            self.caller,
+            operator_new
+        );
     }
 
-    finalize set_fee(public caller: address, fee: u64) {
-        let real_admin: address = Mapping::get(admin, true);
-        assert_eq(caller, real_admin);
+    finalize set_operator(
+        caller: address,
+        operator_new: address
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
 
-        Mapping::set(fees, true, fee);
+        settings.set(
+            true,
+            Setting {
+                admin: setting.admin,
+                operator: operator_new,
+                fee: setting.fee,
+            },
+        );
     }
 
+    transition set_fee(
+        public fee_new: u64,
+    ) {
+        return then finalize(
+            self.caller,
+            fee_new,
+        );
+    }
+
+    finalize set_fee(
+        caller: address,
+        fee_new: u64,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: setting.admin,
+                operator: setting.operator,
+                fee: fee_new,
+            },
+        );
+    }
+
+    transition withdraw_fee(
+        public fee_to_withdraw: u64,
+        public recipient: address,
+    ) {
+        credits.leo/transfer_public(recipient, fee_to_withdraw);
+        return then finalize(
+            self.caller,
+        );
+    }
+
+    finalize withdraw_fee(
+        caller: address,
+    ) {
+        assert_eq(caller, settings.get(true).admin);
+    }
 }
