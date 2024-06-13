@@ -26,6 +26,13 @@ struct Bid:
     nft_id as u128;
     amount as u64;
 
+record BidRecord:
+    owner as address.private;
+    bid_type as u8.private;
+    bidder as address.private;
+    nft_id as u128.private;
+    amount as u64.private;
+
 record Nft:
     owner as address.private;
     minter as address.private;
@@ -193,4 +200,35 @@ finalize update_order:
     assert.eq r0 r5.holder;
     cast r5.holder r5.nft_id r5.order_type r2 r5.status r5.deadline into r6 as Order;
     set r6 into orders[r1];
+
+
+
+
+function cancel_order:
+    input r0 as credits.aleo/credits.record;
+    input r1 as u64.public;
+    input r2 as u128.public;
+    input r3 as address.public;
+    cast r3 2u8 self.caller r2 0u64 into r4 as BidRecord.record;
+    call credits.aleo/transfer_private_to_public r0 artgo_aigc_v0_1.aleo r1 into r5 r6;
+    async cancel_order self.caller r2 r1 r3 r6 into r7;
+    output r5 as credits.aleo/credits.record;
+    output r4 as BidRecord.record;
+    output r7 as artgo_aigc_v0_1.aleo/cancel_order.future;
+
+finalize cancel_order:
+    input r0 as address.public;
+    input r1 as u128.public;
+    input r2 as u64.public;
+    input r3 as address.public;
+    input r4 as credits.aleo/transfer_private_to_public.future;
+    await r4;
+    get settings[true] into r5;
+    assert.eq r2 r5.fee;
+    assert.eq r3 r5.operator;
+    get orders[r1] into r6;
+    assert.eq r6.status 1u8;
+    assert.eq r0 r6.holder;
+    cast r6.holder r6.nft_id r6.order_type r6.amount 2u8 r6.deadline into r7 as Order;
+    set r7 into orders[r1];
 
