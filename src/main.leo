@@ -302,42 +302,42 @@ program artgo_aigc_v0_1.aleo{
             },
         );
     }
-//
-//     transition update_order (
-//         public nft_id: u128,
-//         public new_amount: u64,
-//     ) {
-//         return then finalize(
-//             self.caller,
-//             nft_id,
-//             new_amount
-//         );
-//     }
-//
-//     finalize update_order (
-//         owner: address,
-//         nft_id: u128,
-//         amount_new: u64,
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert(amount_new >= setting.fee);
-//
-//         let order: Order = orders.get(nft_id);
-//         assert_eq(order.status, ORDER_STATUS_TRADING);
-//         assert_eq(owner, order.holder);
-//
-//         orders.set(
-//             nft_id,
-//             Order {
-//                 holder: order.holder,
-//                 nft_id: order.nft_id,
-//                 amount: amount_new,
-//                 order_type: order.order_type,
-//                 status: order.status,
-//                 deadline: order.deadline,
-//             },
-//         );
-//     }
+
+    async transition update_order (
+        public nft_id: u128,
+        public new_amount: u64,
+    ) -> Future {
+        return finalize_update_order(
+            self.caller,
+            nft_id,
+            new_amount
+        );
+    }
+
+    async function finalize_update_order (
+        owner: address,
+        nft_id: u128,
+        amount_new: u64,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert(amount_new >= setting.fee);
+
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
+        assert_eq(owner, order.holder);
+
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: amount_new,
+                order_type: order.order_type,
+                status: order.status,
+                deadline: order.deadline,
+            },
+        );
+    }
 //
 //     transition cancel_order (
 //         private credit: credits.leo/credits,

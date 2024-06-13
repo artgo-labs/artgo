@@ -172,3 +172,25 @@ finalize place_order:
     cast r4 r1 r5 r6 1u8 r7 into r13 as Order;
     set r13 into orders[r1];
 
+
+
+
+function update_order:
+    input r0 as u128.public;
+    input r1 as u64.public;
+    async update_order self.caller r0 r1 into r2;
+    output r2 as artgo_aigc_v0_1.aleo/update_order.future;
+
+finalize update_order:
+    input r0 as address.public;
+    input r1 as u128.public;
+    input r2 as u64.public;
+    get settings[true] into r3;
+    gte r2 r3.fee into r4;
+    assert.eq r4 true;
+    get orders[r1] into r5;
+    assert.eq r5.status 1u8;
+    assert.eq r0 r5.holder;
+    cast r5.holder r5.nft_id r5.order_type r2 r5.status r5.deadline into r6 as Order;
+    set r6 into orders[r1];
+
