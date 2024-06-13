@@ -225,81 +225,83 @@ program artgo_aigc_v0_1.aleo{
             },
         );
     }
-//
-//     transition place_order (
-//         public nft_id: u128,
-//         private nft: Nft,
-//         public order_type: u8,
-//         public amount: u64,
-//         public deadline: u32,
-//         public operator_in: address
-//     ) -> Nft {
-//         // only support buy / sell atm
-//         assert_eq(order_type, ORDER_TYPE_NORMAL);
-//
-//         let hash: field = BHP256::hash_to_field(
-//             NftHash {
-//                 minter: nft.minter,
-//                 prompt: nft.prompt,
-//                 nonce: nft.nonce,
-//             }
-//         );
-//
-//         // find order based on hash offchain
-//         let nft_transfer : Nft = Nft {
-//             owner: operator_in,
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//             uri: nft.uri,
-//         };
-//
-//         return nft_transfer then finalize(
-//             operator_in,
-//             nft_id,
-//             hash,
-//             nft.uri,
-//             self.caller,
-//             order_type,
-//             amount,
-//             deadline,
-//         );
-//     }
-//
-//     finalize place_order (
-//         operator_in: address,
-//         nft_id: u128,
-//         hash: field,
-//         uri: [u128;3],
-//         caller: address,
-//         order_type: u8,
-//         amount: u64,
-//         deadline: u32,
-//     ) {
-//         assert(deadline > block.height);
-//
-//         let setting: Setting = settings.get(true);
-//         assert_eq(operator_in, setting.operator);
-//         assert(amount >= setting.fee);
-//
-//         let nft: NftInfo = Mapping::get(nfts, nft_id);
-//         assert_eq(nft.hash, hash);
-//         assert_eq(nft.uri, uri);
-//
-//         // update order information
-//         assert_eq(orders.contains(nft_id), false);
-//         orders.set(
-//             nft_id,
-//             Order {
-//                 holder: caller,
-//                 nft_id: nft_id,
-//                 amount: amount,
-//                 order_type: order_type,
-//                 status: ORDER_STATUS_TRADING,
-//                 deadline: deadline,
-//             },
-//         );
-//     }
+
+    async transition place_order (
+        public nft_id: u128,
+        private nft: Nft,
+        public order_type: u8,
+        public amount: u64,
+        public deadline: u32,
+        public operator_in: address
+    ) -> (Nft, Future) {
+        // only support buy / sell atm
+        assert_eq(order_type, ORDER_TYPE_NORMAL);
+
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            }
+        );
+
+        // find order based on hash offchain
+        let nft_transfer : Nft = Nft {
+            owner: operator_in,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        let f: Future = finalize_place_order(
+            operator_in,
+            nft_id,
+            hash,
+            nft.uri,
+            self.caller,
+            order_type,
+            amount,
+            deadline,
+        );
+
+        return (nft_transfer, f);
+    }
+
+    async function finalize_place_order (
+        operator_in: address,
+        nft_id: u128,
+        hash: field,
+        uri: [u128;3],
+        caller: address,
+        order_type: u8,
+        amount: u64,
+        deadline: u32,
+    ) {
+        assert(deadline > block.height);
+
+        let setting: Setting = settings.get(true);
+        assert_eq(operator_in, setting.operator);
+        assert(amount >= setting.fee);
+
+        let nft: NftInfo = Mapping::get(nfts, nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
+
+        // update order information
+        assert_eq(orders.contains(nft_id), false);
+        orders.set(
+            nft_id,
+            Order {
+                holder: caller,
+                nft_id: nft_id,
+                amount: amount,
+                order_type: order_type,
+                status: ORDER_STATUS_TRADING,
+                deadline: deadline,
+            },
+        );
+    }
 //
 //     transition update_order (
 //         public nft_id: u128,
