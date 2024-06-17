@@ -614,59 +614,59 @@ program artgo_aigc_v0_1.aleo{
         bids.remove(nft_id);
         orders.remove(nft_id);
     }
-//
-//     transition set_admin(
-//         public admin_new: address,
-//     ) {
-//         return then finalize(
-//             self.caller,
-//             admin_new
-//         );
-//     }
-//
-//     finalize set_admin(
-//         caller: address,
-//         admin_new: address
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert_eq(caller, setting.admin);
-//
-//         settings.set(
-//             true,
-//             Setting {
-//                 admin: admin_new,
-//                 operator: setting.operator,
-//                 fee: setting.fee,
-//             },
-//         );
-//     }
-//
-//     transition set_operator(
-//         public operator_new: address,
-//     ) {
-//         return then finalize(
-//             self.caller,
-//             operator_new
-//         );
-//     }
-//
-//     finalize set_operator(
-//         caller: address,
-//         operator_new: address
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert_eq(caller, setting.admin);
-//
-//         settings.set(
-//             true,
-//             Setting {
-//                 admin: setting.admin,
-//                 operator: operator_new,
-//                 fee: setting.fee,
-//             },
-//         );
-//     }
-//
+
+    async transition set_admin(
+        public admin_new: address,
+    ) -> Future {
+        return finalize_set_admin(
+            self.caller,
+            admin_new
+        );
+    }
+
+    async function finalize_set_admin(
+        caller: address,
+        admin_new: address
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: admin_new,
+                operator: setting.operator,
+                fee: setting.fee,
+            },
+        );
+    }
+
+    async transition set_operator(
+        public operator_new: address,
+    ) -> Future {
+        return finalize_set_operator(
+            self.caller,
+            operator_new
+        );
+    }
+
+    async function finalize_set_operator(
+        caller: address,
+        operator_new: address
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: setting.admin,
+                operator: operator_new,
+                fee: setting.fee,
+            },
+        );
+    }
+
 //     transition set_fee(
 //         public fee_new: u64,
 //     ) {

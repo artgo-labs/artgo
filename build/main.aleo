@@ -345,3 +345,35 @@ finalize finish_order:
     remove bids[r0];
     remove orders[r0];
 
+
+
+
+function set_admin:
+    input r0 as address.public;
+    async set_admin self.caller r0 into r1;
+    output r1 as artgo_aigc_v0_1.aleo/set_admin.future;
+
+finalize set_admin:
+    input r0 as address.public;
+    input r1 as address.public;
+    get settings[true] into r2;
+    assert.eq r0 r2.admin;
+    cast r1 r2.operator r2.fee into r3 as Setting;
+    set r3 into settings[true];
+
+
+
+
+function set_operator:
+    input r0 as address.public;
+    async set_operator self.caller r0 into r1;
+    output r1 as artgo_aigc_v0_1.aleo/set_operator.future;
+
+finalize set_operator:
+    input r0 as address.public;
+    input r1 as address.public;
+    get settings[true] into r2;
+    assert.eq r0 r2.admin;
+    cast r2.admin r1 r2.fee into r3 as Setting;
+    set r3 into settings[true];
+
