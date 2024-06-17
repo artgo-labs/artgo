@@ -525,89 +525,95 @@ program artgo_aigc_v0_1.aleo{
             },
         );
     }
-//
-//     // ONLY OPERATOR
-//     transition finish_order (
-//         public nft_id: u128,
-//         private nft: Nft,
-//         public holder: address,
-//         public fee: u64,
-//         public winner: address,
-//         public winner_amount: u64,
-//     ) -> (Nft){
-//         // transfer remaining amount
-//         credits.leo/transfer_public(holder, winner_amount - fee);
-//
-//         let hash: field = BHP256::hash_to_field(
-//             NftHash {
-//                 minter: nft.minter,
-//                 prompt: nft.prompt,
-//                 nonce: nft.nonce,
-//             },
-//         );
-//
-//         let nft_transfer : Nft = Nft {
-//             owner: winner,
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//             uri: nft.uri,
-//         };
-//
-//         return nft_transfer then finalize(
-//             nft_id,
-//             holder,
-//             hash,
-//             nft.uri,
-//             winner,
-//             winner_amount,
-//             fee,
-//             self.caller,
-//         );
-//     }
-//
-//     finalize finish_order (
-//         nft_id: u128,
-//         holder: address,
-//         hash: field,
-//         uri: [u128;3],
-//         winner: address,
-//         winner_amount: u64,
-//         fee: u64,
-//         caller: address,
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert_eq(caller, setting.operator);
-//         assert_eq(fee, setting.fee);
-//
-//         // verify order status
-//         assert_eq(orders.get(nft_id).status, ORDER_STATUS_FINISHED);
-//
-//         let nft: NftInfo = nfts.get(nft_id);
-//         assert_eq(nft.hash, hash);
-//         assert_eq(nft.uri, uri);
-//         assert_eq(nft.holder, holder);
-//
-//         // verify bid
-//         let bid: Bid = bids.get(nft_id);
-//         assert_eq(bid.bidder, winner);
-//         assert_eq(bid.amount, winner_amount);
-//
-//         // update holder info
-//         nfts.set(
-//             nft_id,
-//             NftInfo {
-//                 holder: winner,
-//                 minter: nft.minter,
-//                 hash: nft.hash,
-//                 uri: nft.uri,
-//             },
-//         );
-//
-//         // clear mappings
-//         bids.remove(nft_id);
-//         orders.remove(nft_id);
-//     }
+
+    // ONLY OPERATOR
+    async transition finish_order(
+        public nft_id: u128,
+        private nft: Nft,
+        public holder: address,
+        public fee: u64,
+        public winner: address,
+        public winner_amount: u64,
+    ) -> (Nft, Future){
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
+
+        let nft_transfer : Nft = Nft {
+            owner: winner,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        // transfer remaining amount
+        let f_credits_transfer_public: Future =
+            credits.aleo/transfer_public(holder, winner_amount - fee);
+
+        let f: Future = finalize_finish_order(
+            nft_id,
+            holder,
+            hash,
+            nft.uri,
+            winner,
+            winner_amount,
+            fee,
+            self.caller,
+            f_credits_transfer_public,
+        );
+
+        return (nft_transfer, f);
+    }
+
+    async function finalize_finish_order(
+        nft_id: u128,
+        holder: address,
+        hash: field,
+        uri: [u128;3],
+        winner: address,
+        winner_amount: u64,
+        fee: u64,
+        caller: address,
+        f_credits_transfer_public: Future,
+    ) {
+        f_credits_transfer_public.await();
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.operator);
+        assert_eq(fee, setting.fee);
+
+        // verify order status
+        assert_eq(orders.get(nft_id).status, ORDER_STATUS_FINISHED);
+
+        let nft: NftInfo = nfts.get(nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
+        assert_eq(nft.holder, holder);
+
+        // verify bid
+        let bid: Bid = bids.get(nft_id);
+        assert_eq(bid.bidder, winner);
+        assert_eq(bid.amount, winner_amount);
+
+        // update holder info
+        nfts.set(
+            nft_id,
+            NftInfo {
+                holder: winner,
+                minter: nft.minter,
+                hash: nft.hash,
+                uri: nft.uri,
+            },
+        );
+
+        // clear mappings
+        bids.remove(nft_id);
+        orders.remove(nft_id);
+    }
 //
 //     transition set_admin(
 //         public admin_new: address,

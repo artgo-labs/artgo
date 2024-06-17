@@ -298,3 +298,50 @@ finalize bid_order:
     cast r7.holder r7.nft_id r7.order_type r7.amount 3u8 r7.deadline into r10 as Order;
     set r10 into orders[r1];
 
+
+
+
+function finish_order:
+    input r0 as u128.public;
+    input r1 as Nft.record;
+    input r2 as address.public;
+    input r3 as u64.public;
+    input r4 as address.public;
+    input r5 as u64.public;
+    cast r1.minter r1.prompt r1.nonce into r6 as NftHash;
+    hash.bhp256 r6 into r7 as field;
+    cast r4 r1.minter r1.prompt r1.nonce r1.uri into r8 as Nft.record;
+    sub r5 r3 into r9;
+    call credits.aleo/transfer_public r2 r9 into r10;
+    async finish_order r0 r2 r7 r1.uri r4 r5 r3 self.caller r10 into r11;
+    output r8 as Nft.record;
+    output r11 as artgo_aigc_v0_1.aleo/finish_order.future;
+
+finalize finish_order:
+    input r0 as u128.public;
+    input r1 as address.public;
+    input r2 as field.public;
+    input r3 as [u128; 3u32].public;
+    input r4 as address.public;
+    input r5 as u64.public;
+    input r6 as u64.public;
+    input r7 as address.public;
+    input r8 as credits.aleo/transfer_public.future;
+    await r8;
+    get settings[true] into r9;
+    assert.eq r7 r9.operator;
+    assert.eq r6 r9.fee;
+    get orders[r0] into r10;
+    assert.eq r10.status 3u8;
+    get nfts[r0] into r11;
+    assert.eq r11.hash r2;
+    assert.eq r11.uri r3;
+    assert.eq r11.holder r1;
+    get bids[r0] into r12;
+    assert.eq r12.bidder r4;
+    assert.eq r12.amount r5;
+    cast r4 r11.minter r11.hash r11.uri into r13 as NftInfo;
+    set r13 into nfts[r0];
+    remove bids[r0];
+    remove orders[r0];
+
