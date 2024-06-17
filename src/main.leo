@@ -226,7 +226,7 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-    async transition place_order (
+    async transition place_order(
         public nft_id: u128,
         private nft: Nft,
         public order_type: u8,
@@ -268,7 +268,7 @@ program artgo_aigc_v0_1.aleo{
         return (nft_transfer, f);
     }
 
-    async function finalize_place_order (
+    async function finalize_place_order(
         operator_in: address,
         nft_id: u128,
         hash: field,
@@ -303,7 +303,7 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-    async transition update_order (
+    async transition update_order(
         public nft_id: u128,
         public new_amount: u64,
     ) -> Future {
@@ -314,7 +314,7 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-    async function finalize_update_order (
+    async function finalize_update_order(
         owner: address,
         nft_id: u128,
         amount_new: u64,
@@ -339,7 +339,7 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-    async transition cancel_order (
+    async transition cancel_order(
         private credit: credits.aleo/credits,
         public fee: u64,
         public nft_id: u128,
@@ -368,7 +368,7 @@ program artgo_aigc_v0_1.aleo{
         return (change, bid_record, f);
     }
 
-    async function finalize_cancel_order (
+    async function finalize_cancel_order(
         owner: address,
         nft_id: u128,
         fee: u64,
@@ -398,7 +398,7 @@ program artgo_aigc_v0_1.aleo{
     }
 
     // handle cancel order, delete states
-    async transition handle_cancel_order (
+    async transition handle_cancel_order(
         public nft_id: u128,
         private nft: Nft,
         public receiver: address,
@@ -455,69 +455,76 @@ program artgo_aigc_v0_1.aleo{
         orders.remove(nft_id);
     }
 
-//     transition bid_order (
-//         private credit: credits.leo/credits,
-//         public nft_id: u128,
-//         public amount: u64,
-//         public operator_in: address,
-//     ) -> (BidRecord, credits.leo/credits) {
-//         let bid_record: BidRecord = BidRecord {
-//             owner: operator_in,
-//             bid_type: BID_TYPE_BID,
-//             bidder: self.caller,
-//             nft_id: nft_id,
-//             amount: amount,
-//         };
-//
-//         // lock credits in this program
-//         let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, amount);
-//         return (bid_record, change) then finalize(
-//             self.caller,
-//             nft_id,
-//             amount,
-//             operator_in,
-//         );
-//     }
-//
-//     finalize bid_order (
-//         caller: address,
-//         nft_id: u128,
-//         amount: u64,
-//         operator_in: address,
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert_eq(operator_in, setting.operator);
-//
-//         // add bid
-//         bids.set(
-//             nft_id,
-//             Bid {
-//                 bidder: caller,
-//                 nft_id: nft_id,
-//                 amount : amount,
-//             },
-//         );
-//
-//         // verify order
-//         let order: Order = orders.get(nft_id);
-//         assert_eq(order.status, ORDER_STATUS_TRADING);
-//         assert(amount >= order.amount);
-//         // deadline check
-//         assert(block.height < order.deadline);
-//
-//         // update order
-//         orders.set(
-//             nft_id,
-//             Order {
-//                 holder: order.holder,
-//                 nft_id: order.nft_id,
-//                 amount: order.amount,
-//                 order_type: order.order_type,
-//                 status: ORDER_STATUS_FINISHED,
-//                 deadline: order.deadline,
-//             },
-//         );
-//     }
+    async transition bid_order(
+        private credit: credits.aleo/credits,
+        public nft_id: u128,
+        public amount: u64,
+        public operator_in: address,
+    ) -> (BidRecord, credits.aleo/credits, Future) {
+        let bid_record: BidRecord = BidRecord {
+            owner: operator_in,
+            bid_type: BID_TYPE_BID,
+            bidder: self.caller,
+            nft_id: nft_id,
+            amount: amount,
+        };
+
+        // lock credits in this program
+        let (change, f_credits_transfer_private_to_public): (credits.aleo/credits, Future) =
+            credits.aleo/transfer_private_to_public(credit, self.address, amount);
+
+        let f: Future = finalize_bid_order(
+            self.caller,
+            nft_id,
+            amount,
+            operator_in,
+            f_credits_transfer_private_to_public,
+        );
+
+        return (bid_record, change, f);
+    }
+
+    async function finalize_bid_order(
+        caller: address,
+        nft_id: u128,
+        amount: u64,
+        operator_in: address,
+        f_credits_transfer_private_to_public: Future,
+    ) {
+        f_credits_transfer_private_to_public.await();
+        let setting: Setting = settings.get(true);
+        assert_eq(operator_in, setting.operator);
+
+        // add bid
+        bids.set(
+            nft_id,
+            Bid {
+                bidder: caller,
+                nft_id: nft_id,
+                amount : amount,
+            },
+        );
+
+        // verify order
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_TRADING);
+        assert(amount >= order.amount);
+        // deadline check
+        assert(block.height < order.deadline);
+
+        // update order
+        orders.set(
+            nft_id,
+            Order {
+                holder: order.holder,
+                nft_id: order.nft_id,
+                amount: order.amount,
+                order_type: order.order_type,
+                status: ORDER_STATUS_FINISHED,
+                deadline: order.deadline,
+            },
+        );
+    }
 //
 //     // ONLY OPERATOR
 //     transition finish_order (

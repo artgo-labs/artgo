@@ -263,3 +263,38 @@ finalize handle_cancel_order:
     remove bids[r0];
     remove orders[r0];
 
+
+
+
+function bid_order:
+    input r0 as credits.aleo/credits.record;
+    input r1 as u128.public;
+    input r2 as u64.public;
+    input r3 as address.public;
+    cast r3 1u8 self.caller r1 r2 into r4 as BidRecord.record;
+    call credits.aleo/transfer_private_to_public r0 artgo_aigc_v0_1.aleo r2 into r5 r6;
+    async bid_order self.caller r1 r2 r3 r6 into r7;
+    output r4 as BidRecord.record;
+    output r5 as credits.aleo/credits.record;
+    output r7 as artgo_aigc_v0_1.aleo/bid_order.future;
+
+finalize bid_order:
+    input r0 as address.public;
+    input r1 as u128.public;
+    input r2 as u64.public;
+    input r3 as address.public;
+    input r4 as credits.aleo/transfer_private_to_public.future;
+    await r4;
+    get settings[true] into r5;
+    assert.eq r3 r5.operator;
+    cast r0 r1 r2 into r6 as Bid;
+    set r6 into bids[r1];
+    get orders[r1] into r7;
+    assert.eq r7.status 1u8;
+    gte r2 r7.amount into r8;
+    assert.eq r8 true;
+    lt block.height r7.deadline into r9;
+    assert.eq r9 true;
+    cast r7.holder r7.nft_id r7.order_type r7.amount 3u8 r7.deadline into r10 as Order;
+    set r10 into orders[r1];
+
