@@ -692,20 +692,23 @@ program artgo_aigc_v0_1.aleo{
             },
         );
     }
-//
-//     transition withdraw_fee(
-//         public fee_to_withdraw: u64,
-//         public recipient: address,
-//     ) {
-//         credits.leo/transfer_public(recipient, fee_to_withdraw);
-//         return then finalize(
-//             self.caller,
-//         );
-//     }
-//
-//     finalize withdraw_fee(
-//         caller: address,
-//     ) {
-//         assert_eq(caller, settings.get(true).admin);
-//     }
+
+    async transition withdraw_fee(
+        public fee_to_withdraw: u64,
+        public recipient: address,
+    ) -> Future {
+        let f_credits_transfer_public: Future = credits.aleo/transfer_public(recipient, fee_to_withdraw);
+        return finalize_withdraw_fee(
+            self.caller,
+            f_credits_transfer_public,
+        );
+    }
+
+    async function finalize_withdraw_fee(
+        caller: address,
+        f_credits_transfer_public: Future,
+    ) {
+        f_credits_transfer_public.await();
+        assert_eq(caller, settings.get(true).admin);
+    }
 }

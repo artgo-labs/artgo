@@ -393,3 +393,20 @@ finalize set_fee:
     cast r2.admin r2.operator r1 into r3 as Setting;
     set r3 into settings[true];
 
+
+
+
+function withdraw_fee:
+    input r0 as u64.public;
+    input r1 as address.public;
+    call credits.aleo/transfer_public r1 r0 into r2;
+    async withdraw_fee self.caller r2 into r3;
+    output r3 as artgo_aigc_v0_1.aleo/withdraw_fee.future;
+
+finalize withdraw_fee:
+    input r0 as address.public;
+    input r1 as credits.aleo/transfer_public.future;
+    await r1;
+    get settings[true] into r2;
+    assert.eq r0 r2.admin;
+
