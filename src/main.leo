@@ -667,31 +667,31 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-//     transition set_fee(
-//         public fee_new: u64,
-//     ) {
-//         return then finalize(
-//             self.caller,
-//             fee_new,
-//         );
-//     }
-//
-//     finalize set_fee(
-//         caller: address,
-//         fee_new: u64,
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert_eq(caller, setting.admin);
-//
-//         settings.set(
-//             true,
-//             Setting {
-//                 admin: setting.admin,
-//                 operator: setting.operator,
-//                 fee: fee_new,
-//             },
-//         );
-//     }
+    async transition set_fee(
+        public fee_new: u64,
+    ) -> Future {
+        return finalize_set_fee(
+            self.caller,
+            fee_new,
+        );
+    }
+
+    async function finalize_set_fee(
+        caller: address,
+        fee_new: u64,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.admin);
+
+        settings.set(
+            true,
+            Setting {
+                admin: setting.admin,
+                operator: setting.operator,
+                fee: fee_new,
+            },
+        );
+    }
 //
 //     transition withdraw_fee(
 //         public fee_to_withdraw: u64,

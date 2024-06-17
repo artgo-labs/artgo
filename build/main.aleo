@@ -377,3 +377,19 @@ finalize set_operator:
     cast r2.admin r1 r2.fee into r3 as Setting;
     set r3 into settings[true];
 
+
+
+
+function set_fee:
+    input r0 as u64.public;
+    async set_fee self.caller r0 into r1;
+    output r1 as artgo_aigc_v0_1.aleo/set_fee.future;
+
+finalize set_fee:
+    input r0 as address.public;
+    input r1 as u64.public;
+    get settings[true] into r2;
+    assert.eq r0 r2.admin;
+    cast r2.admin r2.operator r1 into r3 as Setting;
+    set r3 into settings[true];
+
