@@ -2,8 +2,6 @@ import credits.aleo;
 
 // The 'artgo_aigc_v0_1.aleo' program.
 program artgo_aigc_v0_1.aleo{
-
-//     const THIS_ADDRESS: address = self.caller;
     const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
 
     // order status
