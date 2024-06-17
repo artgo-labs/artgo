@@ -232,3 +232,34 @@ finalize cancel_order:
     cast r6.holder r6.nft_id r6.order_type r6.amount 2u8 r6.deadline into r7 as Order;
     set r7 into orders[r1];
 
+
+
+
+function handle_cancel_order:
+    input r0 as u128.public;
+    input r1 as Nft.record;
+    input r2 as address.public;
+    cast r2 r1.minter r1.prompt r1.nonce r1.uri into r3 as Nft.record;
+    cast r1.minter r1.prompt r1.nonce into r4 as NftHash;
+    hash.bhp256 r4 into r5 as field;
+    async handle_cancel_order r0 r5 r1.uri r2 self.caller into r6;
+    output r3 as Nft.record;
+    output r6 as artgo_aigc_v0_1.aleo/handle_cancel_order.future;
+
+finalize handle_cancel_order:
+    input r0 as u128.public;
+    input r1 as field.public;
+    input r2 as [u128; 3u32].public;
+    input r3 as address.public;
+    input r4 as address.public;
+    get settings[true] into r5;
+    assert.eq r4 r5.operator;
+    get nfts[r0] into r6;
+    assert.eq r6.hash r1;
+    assert.eq r6.uri r2;
+    get orders[r0] into r7;
+    assert.eq r7.status 2u8;
+    assert.eq r3 r7.holder;
+    remove bids[r0];
+    remove orders[r0];
+

@@ -356,6 +356,7 @@ program artgo_aigc_v0_1.aleo{
         // lock fee in this program
         let (change, f_credits_transfer_private_to_public): (credits.aleo/credits, Future) =
             credits.aleo/transfer_private_to_public(credit, self.address, fee);
+
         let f: Future = finalize_cancel_order(
             self.caller,
             nft_id,
@@ -396,62 +397,64 @@ program artgo_aigc_v0_1.aleo{
         );
     }
 
-//     // handle cancel order, delete states
-//     transition handle_cancel_order (
-//         public nft_id: u128,
-//         private nft: Nft,
-//         public receiver: address,
-//     ) -> Nft {
-//         let nft_transfer : Nft = Nft {
-//             owner: receiver,
-//             minter: nft.minter,
-//             prompt: nft.prompt,
-//             nonce: nft.nonce,
-//             uri: nft.uri,
-//         };
-//
-//         let hash: field = BHP256::hash_to_field(
-//             NftHash {
-//                 minter: nft.minter,
-//                 prompt: nft.prompt,
-//                 nonce: nft.nonce,
-//             },
-//         );
-//
-//         return nft_transfer then finalize(
-//             nft_id,
-//             hash,
-//             nft.uri,
-//             receiver,
-//             self.caller,
-//         );
-//     }
-//
-//     finalize handle_cancel_order (
-//         nft_id: u128,
-//         hash: field,
-//         uri: [u128;3],
-//         receiver: address,
-//         caller: address,
-//     ) {
-//         let setting: Setting = settings.get(true);
-//         assert_eq(caller, setting.operator);
-//
-//         // verify nft
-//         let nft: NftInfo = nfts.get(nft_id);
-//         assert_eq(nft.hash, hash);
-//         assert_eq(nft.uri, uri);
-//
-//         // verify order
-//         let order: Order = orders.get(nft_id);
-//         assert_eq(order.status, ORDER_STATUS_CANCELLED);
-//         assert_eq(receiver, order.holder);
-//
-//         // clear mappings
-//         bids.remove(nft_id);
-//         orders.remove(nft_id);
-//     }
-//
+    // handle cancel order, delete states
+    async transition handle_cancel_order (
+        public nft_id: u128,
+        private nft: Nft,
+        public receiver: address,
+    ) -> (Nft, Future) {
+        let nft_transfer : Nft = Nft {
+            owner: receiver,
+            minter: nft.minter,
+            prompt: nft.prompt,
+            nonce: nft.nonce,
+            uri: nft.uri,
+        };
+
+        let hash: field = BHP256::hash_to_field(
+            NftHash {
+                minter: nft.minter,
+                prompt: nft.prompt,
+                nonce: nft.nonce,
+            },
+        );
+
+        let f: Future = finalize_handle_cancel_order(
+            nft_id,
+            hash,
+            nft.uri,
+            receiver,
+            self.caller,
+        );
+
+        return (nft_transfer, f);
+    }
+
+    async function finalize_handle_cancel_order(
+        nft_id: u128,
+        hash: field,
+        uri: [u128;3],
+        receiver: address,
+        caller: address,
+    ) {
+        let setting: Setting = settings.get(true);
+        assert_eq(caller, setting.operator);
+
+        // verify nft
+        let nft: NftInfo = nfts.get(nft_id);
+        assert_eq(nft.hash, hash);
+        assert_eq(nft.uri, uri);
+
+        // verify order
+        let order: Order = orders.get(nft_id);
+        assert_eq(order.status, ORDER_STATUS_CANCELLED);
+        assert_eq(receiver, order.holder);
+
+        // clear mappings
+        bids.remove(nft_id);
+        orders.remove(nft_id);
+    }
+
 //     transition bid_order (
 //         private credit: credits.leo/credits,
 //         public nft_id: u128,
