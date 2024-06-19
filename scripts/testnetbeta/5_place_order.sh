@@ -19,7 +19,7 @@ artgo_aigc_v0_1.aleo place_order 1u128 "{
                                             2u128.private,
                                             3u128.private
                                           ],
-                                          _nonce: 7068133577849174060968108780960393427354684440143945460856650205898612916396group.public
+                                          _nonce: 2989415603474923173369309385246717853453015809584256099223374847065135608103group.public
                                         }" 1u8 1000000u64 666666u32 "$ADDR_2"
 
-# tx hash: at1vlg8ttw4kant8sd4zdj745avslf3uq9yecj2g0qke2dtzssryy8sf0u9fa
+# tx hash: at18nntasjd2jyjzkjr56ynjd6faz5ntmngf84u0xtulqk55lftggyshl68we
