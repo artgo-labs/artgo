@@ -1,9 +1,7 @@
-import credits.leo;
+import credits.aleo;
 
-// The 'artgo_aigc_v1_6.aleo' program.
-program artgo_aigc_v1_6.aleo{
-
-    const THIS_ADDRESS: address = aleo17lpfjzs23ny7q8n0wl0fzvkcwfx9m3arhxdrjc5xvw35dqx8mqpsllzxdh;
+// The 'artgo_aigc_v0_1.aleo' program.
+program artgo_aigc_v0_1.aleo{
     const INITIALIZER: address = aleo1rh4whtqef93v2et8j9lujxr67l64fz9ctgn035lwqmp9h6wdf5psa4uu88;
 
     // order status
@@ -84,21 +82,21 @@ program artgo_aigc_v1_6.aleo{
         fee: u64,
     }
 
-    transition init(
+    async transition init(
         public admin: address,
         public operator: address,
         public fee: u64
-    ) {
+    ) -> Future {
         assert_eq(self.caller, INITIALIZER);
 
-        return then finalize(
+        return finalize_init(
             admin,
             operator,
             fee,
         );
     }
 
-    finalize init(
+    async function finalize_init(
         admin: address,
         operator: address,
         fee: u64
@@ -121,11 +119,11 @@ program artgo_aigc_v1_6.aleo{
     }
 
     // mint aigc nft
-    transition mint_nft (
+    async transition mint_nft(
         private prompt: [u128;3],
         public uri: [u128;3],
         public nonce: u128
-    ) -> Nft {
+    ) -> (Nft, Future) {
         let hash: field = BHP256::hash_to_field(
             NftHash {
                 minter: self.caller,
@@ -142,14 +140,16 @@ program artgo_aigc_v1_6.aleo{
             uri: uri,
         };
 
-        return nft then finalize(
-            self.caller,
-            hash,
-            uri,
+        let f: Future = finalize_mint_nft(
+                self.caller,
+                hash,
+                uri,
         );
+
+        return (nft, f);
     }
 
-    finalize mint_nft (
+    async function finalize_mint_nft(
         holder: address,
         hash: field,
         uri: [u128;3],
@@ -172,11 +172,11 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition transfer_private_nft (
+    async transition transfer_private_nft(
         nft_id: u128,
         nft: Nft,
         receiver: address
-    ) -> Nft {
+    ) -> (Nft, Future) {
         let hash: field = BHP256::hash_to_field(
             NftHash {
                 minter: nft.minter,
@@ -193,15 +193,17 @@ program artgo_aigc_v1_6.aleo{
             uri: nft.uri,
         };
 
-        return transferred then finalize(
+        let f: Future = finalize_transfer_private_nft(
             nft_id,
             hash,
             nft.uri,
             receiver,
         );
+
+        return (transferred, f);
     }
 
-    finalize transfer_private_nft (
+    async function finalize_transfer_private_nft(
         nft_id: u128,
         hash: field,
         uri: [u128;3],
@@ -222,14 +224,14 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition place_order (
+    async transition place_order(
         public nft_id: u128,
         private nft: Nft,
         public order_type: u8,
         public amount: u64,
         public deadline: u32,
         public operator_in: address
-    ) -> Nft {
+    ) -> (Nft, Future) {
         // only support buy / sell atm
         assert_eq(order_type, ORDER_TYPE_NORMAL);
 
@@ -250,7 +252,7 @@ program artgo_aigc_v1_6.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(
+        let f: Future = finalize_place_order(
             operator_in,
             nft_id,
             hash,
@@ -260,9 +262,11 @@ program artgo_aigc_v1_6.aleo{
             amount,
             deadline,
         );
+
+        return (nft_transfer, f);
     }
 
-    finalize place_order (
+    async function finalize_place_order(
         operator_in: address,
         nft_id: u128,
         hash: field,
@@ -297,18 +301,18 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition update_order (
+    async transition update_order(
         public nft_id: u128,
         public new_amount: u64,
-    ) {
-        return then finalize(
+    ) -> Future {
+        return finalize_update_order(
             self.caller,
             nft_id,
             new_amount
         );
     }
 
-    finalize update_order (
+    async function finalize_update_order(
         owner: address,
         nft_id: u128,
         amount_new: u64,
@@ -333,12 +337,12 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition cancel_order (
-        private credit: credits.leo/credits,
+    async transition cancel_order(
+        private credit: credits.aleo/credits,
         public fee: u64,
         public nft_id: u128,
         public operator_in: address,
-    ) -> (credits.leo/credits, BidRecord) {
+    ) -> (credits.aleo/credits, BidRecord, Future) {
         let bid_record: BidRecord = BidRecord {
             owner: operator_in,
             bid_type: BID_TYPE_CANCEL,
@@ -348,21 +352,28 @@ program artgo_aigc_v1_6.aleo{
         };
 
         // lock fee in this program
-        let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, fee);
-        return (change, bid_record) then finalize(
+        let (change, f_credits_transfer_private_to_public): (credits.aleo/credits, Future) =
+            credits.aleo/transfer_private_to_public(credit, self.address, fee);
+
+        let f: Future = finalize_cancel_order(
             self.caller,
             nft_id,
             fee,
             operator_in,
+            f_credits_transfer_private_to_public,
         );
+
+        return (change, bid_record, f);
     }
 
-    finalize cancel_order (
+    async function finalize_cancel_order(
         owner: address,
         nft_id: u128,
         fee: u64,
         operator_in: address,
+        f_credits_transfer_private_to_public: Future,
     ) {
+        f_credits_transfer_private_to_public.await();
         let setting: Setting = settings.get(true);
         assert_eq(fee, setting.fee);
         assert_eq(operator_in, setting.operator);
@@ -385,11 +396,11 @@ program artgo_aigc_v1_6.aleo{
     }
 
     // handle cancel order, delete states
-    transition handle_cancel_order (
+    async transition handle_cancel_order(
         public nft_id: u128,
         private nft: Nft,
         public receiver: address,
-    ) -> Nft {
+    ) -> (Nft, Future) {
         let nft_transfer : Nft = Nft {
             owner: receiver,
             minter: nft.minter,
@@ -406,16 +417,18 @@ program artgo_aigc_v1_6.aleo{
             },
         );
 
-        return nft_transfer then finalize(
+        let f: Future = finalize_handle_cancel_order(
             nft_id,
             hash,
             nft.uri,
             receiver,
             self.caller,
         );
+
+        return (nft_transfer, f);
     }
 
-    finalize handle_cancel_order (
+    async function finalize_handle_cancel_order(
         nft_id: u128,
         hash: field,
         uri: [u128;3],
@@ -440,12 +453,12 @@ program artgo_aigc_v1_6.aleo{
         orders.remove(nft_id);
     }
 
-    transition bid_order (
-        private credit: credits.leo/credits,
+    async transition bid_order(
+        private credit: credits.aleo/credits,
         public nft_id: u128,
         public amount: u64,
         public operator_in: address,
-    ) -> (BidRecord, credits.leo/credits) {
+    ) -> (BidRecord, credits.aleo/credits, Future) {
         let bid_record: BidRecord = BidRecord {
             owner: operator_in,
             bid_type: BID_TYPE_BID,
@@ -455,21 +468,28 @@ program artgo_aigc_v1_6.aleo{
         };
 
         // lock credits in this program
-        let change: credits = credits.leo/transfer_private_to_public(credit, THIS_ADDRESS, amount);
-        return (bid_record, change) then finalize(
+        let (change, f_credits_transfer_private_to_public): (credits.aleo/credits, Future) =
+            credits.aleo/transfer_private_to_public(credit, self.address, amount);
+
+        let f: Future = finalize_bid_order(
             self.caller,
             nft_id,
             amount,
             operator_in,
+            f_credits_transfer_private_to_public,
         );
+
+        return (bid_record, change, f);
     }
 
-    finalize bid_order (
+    async function finalize_bid_order(
         caller: address,
         nft_id: u128,
         amount: u64,
         operator_in: address,
+        f_credits_transfer_private_to_public: Future,
     ) {
+        f_credits_transfer_private_to_public.await();
         let setting: Setting = settings.get(true);
         assert_eq(operator_in, setting.operator);
 
@@ -505,17 +525,14 @@ program artgo_aigc_v1_6.aleo{
     }
 
     // ONLY OPERATOR
-    transition finish_order (
+    async transition finish_order(
         public nft_id: u128,
         private nft: Nft,
         public holder: address,
         public fee: u64,
         public winner: address,
         public winner_amount: u64,
-    ) -> (Nft){
-        // transfer remaining amount
-        credits.leo/transfer_public(holder, winner_amount - fee);
-
+    ) -> (Nft, Future){
         let hash: field = BHP256::hash_to_field(
             NftHash {
                 minter: nft.minter,
@@ -532,7 +549,11 @@ program artgo_aigc_v1_6.aleo{
             uri: nft.uri,
         };
 
-        return nft_transfer then finalize(
+        // transfer remaining amount
+        let f_credits_transfer_public: Future =
+            credits.aleo/transfer_public(holder, winner_amount - fee);
+
+        let f: Future = finalize_finish_order(
             nft_id,
             holder,
             hash,
@@ -541,10 +562,13 @@ program artgo_aigc_v1_6.aleo{
             winner_amount,
             fee,
             self.caller,
+            f_credits_transfer_public,
         );
+
+        return (nft_transfer, f);
     }
 
-    finalize finish_order (
+    async function finalize_finish_order(
         nft_id: u128,
         holder: address,
         hash: field,
@@ -553,7 +577,9 @@ program artgo_aigc_v1_6.aleo{
         winner_amount: u64,
         fee: u64,
         caller: address,
+        f_credits_transfer_public: Future,
     ) {
+        f_credits_transfer_public.await();
         let setting: Setting = settings.get(true);
         assert_eq(caller, setting.operator);
         assert_eq(fee, setting.fee);
@@ -587,16 +613,16 @@ program artgo_aigc_v1_6.aleo{
         orders.remove(nft_id);
     }
 
-    transition set_admin(
+    async transition set_admin(
         public admin_new: address,
-    ) {
-        return then finalize(
+    ) -> Future {
+        return finalize_set_admin(
             self.caller,
             admin_new
         );
     }
 
-    finalize set_admin(
+    async function finalize_set_admin(
         caller: address,
         admin_new: address
     ) {
@@ -613,16 +639,16 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition set_operator(
+    async transition set_operator(
         public operator_new: address,
-    ) {
-        return then finalize(
+    ) -> Future {
+        return finalize_set_operator(
             self.caller,
             operator_new
         );
     }
 
-    finalize set_operator(
+    async function finalize_set_operator(
         caller: address,
         operator_new: address
     ) {
@@ -639,16 +665,16 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition set_fee(
+    async transition set_fee(
         public fee_new: u64,
-    ) {
-        return then finalize(
+    ) -> Future {
+        return finalize_set_fee(
             self.caller,
             fee_new,
         );
     }
 
-    finalize set_fee(
+    async function finalize_set_fee(
         caller: address,
         fee_new: u64,
     ) {
@@ -665,19 +691,22 @@ program artgo_aigc_v1_6.aleo{
         );
     }
 
-    transition withdraw_fee(
+    async transition withdraw_fee(
         public fee_to_withdraw: u64,
         public recipient: address,
-    ) {
-        credits.leo/transfer_public(recipient, fee_to_withdraw);
-        return then finalize(
+    ) -> Future {
+        let f_credits_transfer_public: Future = credits.aleo/transfer_public(recipient, fee_to_withdraw);
+        return finalize_withdraw_fee(
             self.caller,
+            f_credits_transfer_public,
         );
     }
 
-    finalize withdraw_fee(
+    async function finalize_withdraw_fee(
         caller: address,
+        f_credits_transfer_public: Future,
     ) {
+        f_credits_transfer_public.await();
         assert_eq(caller, settings.get(true).admin);
     }
 }

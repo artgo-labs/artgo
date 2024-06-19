@@ -1,10 +1,14 @@
 {
-    "program": "artgo_aigc_v1_6.aleo",
-    "version": "0.0.0",
-    "description": "",
-    "development": {
-        "private_key": "APrivateKey1zkp2p4ieFsUJZ2EkudZEsxJTfw81T3qjdKjdbdWcJWKXapG",
-        "address": "aleo1f72p3g82eur6x8ysd4u6hl8rmt8un6eelpzrdsvfkp663wf6uuzs2v8cfk"
-    },
-    "license": "MIT"
+  "program": "artgo_aigc_v0_1.aleo",
+  "version": "0.0.0",
+  "description": "",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "credits.aleo",
+      "location": "network",
+      "network": "testnet",
+      "path": null
+    }
+  ]
 }
